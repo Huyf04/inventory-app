@@ -18,6 +18,9 @@
       <button id="btnRefresh" class="bg-gray-200 px-4 py-2 rounded">Làm mới</button>
     </div>
 
+    <!-- Message box -->
+    <div id="messageBox" class="my-4 hidden p-3 rounded text-white"></div>
+
     <!-- Table -->
     <div class="bg-white shadow rounded">
       <table class="w-full table-auto" id="productTable">
@@ -53,9 +56,9 @@
 <script>
 const api = '/api/products.php';
 
-async function fetchList(q='') {
+async function fetchList(q = '') {
   let url = api;
-  if(q) url += '?q=' + encodeURIComponent(q);
+  if (q) url += '?q=' + encodeURIComponent(q);
   const res = await fetch(url);
   const data = await res.json();
   const tbody = document.getElementById('tbody');
@@ -75,13 +78,44 @@ async function fetchList(q='') {
   });
 }
 
-async function del(id){
-  if(!confirm('Xóa sản phẩm này?')) return;
-  await fetch(api + '?id=' + id, {method:'DELETE'});
+// Hiển thị thông báo
+function showMessage(msg, type = 'success') {
+  const box = document.getElementById('messageBox');
+  box.textContent = msg;
+  // xóa các class ẩn / màu cũ
+  box.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
+  if (type === 'success') {
+    box.classList.add('bg-green-600');
+  } else if (type === 'error') {
+    box.classList.add('bg-red-600');
+  }
+  // ẩn sau 3 giây
+  setTimeout(() => {
+    box.classList.add('hidden');
+  }, 3000);
+}
+
+async function del(id) {
+  if (!confirm('Xóa sản phẩm này?')) return;
+  const res = await fetch(api + '?id=' + id, { method: 'DELETE' });
+  let respData;
+  try {
+    respData = await res.json();
+  } catch (e) {
+    showMessage('Phản hồi không hợp lệ khi xóa', 'error');
+    return;
+  }
+  if (res.ok && respData.success) {
+    showMessage('Xóa sản phẩm thành công', 'success');
+  } else {
+    let msg = 'Lỗi khi xóa sản phẩm';
+    if (respData.error) msg += ': ' + respData.error;
+    showMessage(msg, 'error');
+  }
   fetchList();
 }
 
-async function edit(id){
+async function edit(id) {
   const res = await fetch(api + '?id=' + id);
   const p = await res.json();
   document.getElementById('id').value = p.id;
@@ -93,7 +127,7 @@ async function edit(id){
   document.getElementById('formTitle').textContent = 'Sửa sản phẩm';
 }
 
-document.getElementById('productForm').addEventListener('submit', async (e)=>{
+document.getElementById('productForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('id').value;
   const payload = {
@@ -103,30 +137,57 @@ document.getElementById('productForm').addEventListener('submit', async (e)=>{
     unit_price: parseFloat(document.getElementById('unit_price').value || 0),
     description: document.getElementById('description').value
   };
-  if(id){
-    await fetch(api + '?id=' + id, {
+
+  let res;
+  if (id) {
+    res = await fetch(api + '?id=' + id, {
       method: 'PUT',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
   } else {
-    await fetch(api, {
+    res = await fetch(api, {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(payload)
     });
   }
+
+  let data;
+  try {
+    data = await res.json();
+  } catch (err) {
+    showMessage('Phản hồi không hợp lệ từ server', 'error');
+    return;
+  }
+
+  if (res.ok && data.success) {
+    showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
+  } else {
+    let msg = 'Có lỗi khi lưu sản phẩm';
+    if (data.error) {
+      msg += ': ' + data.error;
+    }
+    showMessage(msg, 'error');
+  }
+
   document.getElementById('productForm').reset();
   document.getElementById('formTitle').textContent = 'Thêm sản phẩm';
   fetchList();
 });
 
-document.getElementById('btnSearch').addEventListener('click', ()=>{
+document.getElementById('btnSearch').addEventListener('click', () => {
   const q = document.getElementById('q').value.trim();
   fetchList(q);
 });
-document.getElementById('btnRefresh').addEventListener('click', ()=> { document.getElementById('q').value=''; fetchList(); });
-document.getElementById('btnReset').addEventListener('click', ()=> { document.getElementById('productForm').reset(); document.getElementById('formTitle').textContent='Thêm sản phẩm'; });
+document.getElementById('btnRefresh').addEventListener('click', () => {
+  document.getElementById('q').value = '';
+  fetchList();
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  document.getElementById('productForm').reset();
+  document.getElementById('formTitle').textContent = 'Thêm sản phẩm';
+});
 
 fetchList();
 </script>

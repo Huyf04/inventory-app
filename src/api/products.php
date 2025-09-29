@@ -1,125 +1,150 @@
 <?php
 // src/api/products.php
+
 header('Content-Type: application/json; charset=utf-8');
+
+// cấu hình / kết nối DB
 require_once __DIR__ . '/../config.php';
 
-// Allow CORS for development (tắt hoặc giới hạn domain khi production)
+// Cho phép CORS (chỉ dùng cho dev, sản xuất nên giới hạn domain)
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
+// Nếu là preflight request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit;
 }
 
-$method = $_SERVER['REQUEST_METHOD'];
-$path = $_GET; // We'll use query params
-
-function json($data) {
+// Hàm trợ giúp trả JSON
+function jsonResponse($data, $code = 200) {
+    http_response_code($code);
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Helper to read JSON body
-$input = json_decode(file_get_contents('php://input'), true) ?? [];
+// Kết nối tới DB (từ config.php)
+global $pg;
+
+// Đọc body JSON nếu có
+$input = json_decode(file_get_contents('php://input'), true);
+if (!is_array($input)) {
+    $input = [];  // nếu không parse được, đặt mảng rỗng
+}
+
+$method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    // List or get single or search
+    // Lấy 1 bản ghi theo id
     if (isset($_GET['id'])) {
         $id = intval($_GET['id']);
-        $stmt = $mysqli->prepare("SELECT * FROM products WHERE id = ?");
-        $stmt->bind_param('i', $id);
-        $stmt->execute();
-        $res = $stmt->get_result()->fetch_assoc();
-        json($res ? $res : []);
+        $res = pg_query_params($pg, "SELECT * FROM products WHERE id = $1", [$id]);
+        if (!$res) {
+            jsonResponse(["error" => pg_last_error($pg)], 500);
+        }
+        $row = pg_fetch_assoc($res);
+        jsonResponse($row ?: [], 200);
     }
 
+    // Tìm kiếm theo q
     if (isset($_GET['q'])) {
-        $q = '%' . $mysqli->real_escape_string($_GET['q']) . '%';
-        $stmt = $mysqli->prepare("SELECT * FROM products WHERE name LIKE ? OR sku LIKE ? OR description LIKE ? ORDER BY updated_at DESC");
-        $stmt->bind_param('sss', $q, $q, $q);
-        $stmt->execute();
-        $res = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-        json($res);
+        $q = "%" . $_GET['q'] . "%";
+        $res = pg_query_params(
+            $pg,
+            "SELECT * FROM products 
+             WHERE name ILIKE $1 OR sku ILIKE $1 OR description ILIKE $1
+             ORDER BY updated_at DESC",
+            [$q]
+        );
+        if (!$res) {
+            jsonResponse(["error" => pg_last_error($pg)], 500);
+        }
+        $rows = pg_fetch_all($res) ?: [];
+        jsonResponse($rows, 200);
     }
 
-    // list with pagination optional
+    // Lấy danh sách (có limit / offset)
     $limit = intval($_GET['limit'] ?? 50);
     $offset = intval($_GET['offset'] ?? 0);
-    $stmt = $mysqli->prepare("SELECT * FROM products ORDER BY updated_at DESC LIMIT ? OFFSET ?");
-    $stmt->bind_param('ii', $limit, $offset);
-    $stmt->execute();
-    $res = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    json($res);
+    $res = pg_query_params(
+        $pg,
+        "SELECT * FROM products ORDER BY updated_at DESC LIMIT $1 OFFSET $2",
+        [$limit, $offset]
+    );
+    if (!$res) {
+        jsonResponse(["error" => pg_last_error($pg)], 500);
+    }
+    $rows = pg_fetch_all($res) ?: [];
+    jsonResponse($rows, 200);
 }
 
 if ($method === 'POST') {
-    // create
-    $sku = $mysqli->real_escape_string($input['sku'] ?? '');
-    $name = $mysqli->real_escape_string($input['name'] ?? '');
-    $desc = $mysqli->real_escape_string($input['description'] ?? '');
+    // Tạo mới
+    $sku = trim($input['sku'] ?? '');
+    $name = trim($input['name'] ?? '');
+    $desc = trim($input['description'] ?? '');
     $qty = intval($input['quantity'] ?? 0);
     $price = floatval($input['unit_price'] ?? 0.0);
 
-    $stmt = $mysqli->prepare("INSERT INTO products (sku, name, description, quantity, unit_price) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param('sssii', $sku, $name, $desc, $qty, $price); // note: bind_param needs correct types; adjust
-    // safer to use 'sssid' types: s s s i d
-    $stmt->close();
-    $stmt = $mysqli->prepare("INSERT INTO products (sku, name, description, quantity, unit_price) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param('sss id', $sku, $name, $desc, $qty, $price); // but PHP wants contiguous type string 'sssid'
-    // correct:
-    $stmt->close();
-    $stmt = $mysqli->prepare("INSERT INTO products (sku, name, description, quantity, unit_price) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param('sss id', $sku, $name, $desc, $qty, $price);
-
-    // Because binding type mistakes are common, let's bypass and use prepared + proper types:
-    $stmt->close();
-    $stmt = $mysqli->prepare("INSERT INTO products (sku, name, description, quantity, unit_price) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param('sss id', $sku, $name, $desc, $qty, $price);
-
-    // To avoid confusion, simpler: use mysqli->query with escaped values (acceptable for small project)
-    $query = "INSERT INTO products (sku, name, description, quantity, unit_price) VALUES ('{$sku}','{$name}','{$desc}', {$qty}, {$price})";
-    if ($mysqli->query($query)) {
-        json(["success" => true, "id" => $mysqli->insert_id]);
-    } else {
-        http_response_code(500);
-        json(["error" => $mysqli->error]);
+    // Có thể kiểm tra validate (ví dụ: name không rỗng)
+    if ($name === '') {
+        jsonResponse(["error" => "Tên sản phẩm không được để trống"], 400);
     }
+
+    $res = pg_query_params(
+        $pg,
+        "INSERT INTO products (sku, name, description, quantity, unit_price) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING id",
+        [$sku, $name, $desc, $qty, $price]
+    );
+    if (!$res) {
+        jsonResponse(["error" => pg_last_error($pg)], 500);
+    }
+    $row = pg_fetch_assoc($res);
+    jsonResponse(["success" => true, "id" => $row['id']], 201);
 }
 
 if ($method === 'PUT') {
-    // update (require id)
+    // Cập nhật
     if (!isset($_GET['id'])) {
-        http_response_code(400);
-        json(["error" => "Missing id"]);
+        jsonResponse(["error" => "Thiếu id"], 400);
     }
     $id = intval($_GET['id']);
-    $sku = $mysqli->real_escape_string($input['sku'] ?? '');
-    $name = $mysqli->real_escape_string($input['name'] ?? '');
-    $desc = $mysqli->real_escape_string($input['description'] ?? '');
+    $sku = trim($input['sku'] ?? '');
+    $name = trim($input['name'] ?? '');
+    $desc = trim($input['description'] ?? '');
     $qty = intval($input['quantity'] ?? 0);
     $price = floatval($input['unit_price'] ?? 0.0);
 
-    $query = "UPDATE products SET sku='{$sku}', name='{$name}', description='{$desc}', quantity={$qty}, unit_price={$price} WHERE id={$id}";
-    if ($mysqli->query($query)) {
-        json(["success" => true, "affected" => $mysqli->affected_rows]);
-    } else {
-        http_response_code(500);
-        json(["error" => $mysqli->error]);
+    if ($name === '') {
+        jsonResponse(["error" => "Tên sản phẩm không được để trống"], 400);
     }
+
+    $res = pg_query_params(
+        $pg,
+        "UPDATE products
+         SET sku = $1, name = $2, description = $3, quantity = $4, unit_price = $5, updated_at = NOW()
+         WHERE id = $6",
+        [$sku, $name, $desc, $qty, $price, $id]
+    );
+    if (!$res) {
+        jsonResponse(["error" => pg_last_error($pg)], 500);
+    }
+    jsonResponse(["success" => true], 200);
 }
 
 if ($method === 'DELETE') {
     if (!isset($_GET['id'])) {
-        http_response_code(400);
-        json(["error" => "Missing id"]);
+        jsonResponse(["error" => "Thiếu id"], 400);
     }
     $id = intval($_GET['id']);
-    $query = "DELETE FROM products WHERE id={$id} LIMIT 1";
-    if ($mysqli->query($query)) {
-        json(["success" => true]);
-    } else {
-        http_response_code(500);
-        json(["error" => $mysqli->error]);
+    $res = pg_query_params($pg, "DELETE FROM products WHERE id = $1", [$id]);
+    if (!$res) {
+        jsonResponse(["error" => pg_last_error($pg)], 500);
     }
+    jsonResponse(["success" => true], 200);
 }
+
+// Nếu không phải các method trên
+jsonResponse(["error" => "Method không được hỗ trợ"], 405);
