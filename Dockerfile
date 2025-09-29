@@ -1,17 +1,15 @@
-# Dockerfile
-FROM php:8.1-apache
+FROM php:8.2-apache
 
-# Install mysqli extension
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Cài pdo_pgsql và pgsql
+RUN docker-php-ext-install pgsql pdo pdo_pgsql
 
-# Enable rewrite (if cần)
+# Bật mod_rewrite nếu cần
 RUN a2enmod rewrite
 
-# Copy app
-COPY src/ /var/www/html/
+# Copy source code
+COPY . /var/www/html/
 
-# Set permissions (nếu cần)
+# Quyền
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
-CMD ["apache2-foreground"]
