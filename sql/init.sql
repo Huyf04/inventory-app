@@ -1,16 +1,33 @@
--- Tạo database
-CREATE DATABASE IF NOT EXISTS inventory CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE inventory;
-
--- Bảng products
+-- Tạo bảng products
 CREATE TABLE IF NOT EXISTS products (
-  id INT AUTO_INCREMENT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   sku VARCHAR(64) UNIQUE,
   name VARCHAR(255) NOT NULL,
   description TEXT,
   quantity INT NOT NULL DEFAULT 0,
-  unit_price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  unit_price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
+-- Trigger cập nhật updated_at tự động
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = NOW();
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS set_timestamp ON products;
+CREATE TRIGGER set_timestamp
+BEFORE UPDATE ON products
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- Thêm dữ liệu mẫu
+INSERT INTO products (sku, name, description, quantity, unit_price) VALUES
+('SKU001', 'Áo sơ mi', 'Áo sơ mi nam tay dài', 50, 199000),
+('SKU002', 'Quần jean', 'Quần jean xanh nam', 30, 299000),
+('SKU003', 'Giày thể thao', 'Giày sneaker nữ', 20, 499000)
+ON CONFLICT (sku) DO NOTHING;
