@@ -12,4 +12,3 @@ if (!$pg) {
     die("Connection failed: " . pg_last_error());
 }
 
-echo "✅ Kết nối Postgres thành công!";
