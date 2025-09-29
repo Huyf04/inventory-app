@@ -34,23 +34,33 @@
     </div>
 
     <!-- Form thêm/sửa -->
-    <div class="mt-6 bg-white p-4 rounded shadow">
-      <h2 class="font-semibold mb-2" id="formTitle">Thêm sản phẩm</h2>
-      <form id="productForm">
-        <input type="hidden" id="id" />
-        <div class="grid grid-cols-2 gap-3">
-          <input id="sku" placeholder="SKU" class="border p-2" required />
-          <input id="name" placeholder="Tên sản phẩm" class="border p-2" required />
-          <input id="quantity" type="number" placeholder="Số lượng" class="border p-2" />
-          <input id="unit_price" type="number" step="0.01" placeholder="Đơn giá" class="border p-2" />
-          <textarea id="description" placeholder="Mô tả" class="border p-2 col-span-2"></textarea>
-        </div>
-        <div class="mt-3 flex gap-2">
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Lưu</button>
-          <button type="button" id="btnReset" class="bg-gray-200 px-4 py-2 rounded">Hủy</button>
-        </div>
-      </form>
+   <div class="mt-6 bg-white p-4 rounded shadow">
+  <h2 class="font-semibold mb-2" id="formTitle">Thêm sản phẩm</h2>
+  <form id="productForm" class="space-y-3">
+    <input type="hidden" id="id" />
+
+    <!-- Hàng 1: SKU + Tên -->
+    <div class="grid grid-cols-2 gap-3">
+      <input id="sku" placeholder="SKU" class="border p-2 rounded w-full" required />
+      <input id="name" placeholder="Tên sản phẩm" class="border p-2 rounded w-full" required />
     </div>
+
+    <!-- Hàng 2: Số lượng + Đơn giá -->
+    <div class="grid grid-cols-2 gap-3">
+      <input id="quantity" type="number" placeholder="Số lượng" class="border p-2 rounded w-full" />
+      <input id="unit_price" type="number" step="0.01" placeholder="Đơn giá" class="border p-2 rounded w-full" />
+    </div>
+
+    <!-- Hàng 3: Mô tả -->
+    <textarea id="description" placeholder="Mô tả" class="border p-2 rounded w-full"></textarea>
+
+    <!-- Buttons -->
+    <div class="flex gap-2">
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Lưu</button>
+      <button type="button" id="btnReset" class="bg-gray-200 px-4 py-2 rounded">Hủy</button>
+    </div>
+  </form>
+</div>
   </div>
 
 <script>
