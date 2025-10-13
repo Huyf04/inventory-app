@@ -69,7 +69,7 @@ if ($method === 'GET') {
     $offset = intval($_GET['offset'] ?? 0);
     $res = pg_query_params(
         $pg,
-        "SELECT * FROM products ORDER BY updated_at DESC LIMIT $1 OFFSET $2",
+        "SELECT * FROM products ORDER BY id DESC LIMIT $1 OFFSET $2",
         [$limit, $offset]
     );
     if (!$res) {
