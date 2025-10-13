@@ -1,3 +1,15 @@
+  <?php
+  require_once 'config.php';  // Đảm bảo session_start đã chạy từ config
+
+  if (!isset($_SESSION['user_id'])) {
+      header('Location: login.php');
+      exit;
+  }
+
+  // Hiển thị username ở header nếu cần (tùy chọn)
+  $currentUser = $_SESSION['username'] ?? 'User';
+  ?>
+  
 <!doctype html>
 <html>
 <head>
@@ -19,11 +31,19 @@
   <div class="max-w-7xl mx-auto">
     <!-- Header -->
     <div class="mb-8">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <i class="fas fa-boxes text-3xl text-blue-600"></i>
-          <h1 class="text-3xl font-bold text-gray-900">Quản lý vật tư</h1>
-        </div>
+        <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <i class="fas fa-boxes text-3xl text-blue-600"></i>
+      <h1 class="text-3xl font-bold text-gray-900">Quản lý vật tư</h1>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="text-sm text-gray-700">Chào, <?php echo htmlspecialchars($currentUser); ?>!</span>
+      <button id="btnLogout" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+        <i class="fas fa-sign-out-alt"></i>
+        Đăng xuất
+      </button>
+    </div>
+  </div>
         <div class="hidden md:block text-sm text-gray-500">
           Quản lý sản phẩm dễ dàng và hiệu quả
         </div>
@@ -302,6 +322,17 @@ document.getElementById('btnReset').addEventListener('click', () => {
 
 // Initial load
 fetchList();
+  // Logout
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    const res = await fetch('/api/auth.php?action=logout', { method: 'GET' });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = '/src/login.php';
+    } else {
+      alert('Lỗi đăng xuất');
+    }
+  });
+  
 </script>
 </body>
 </html>
