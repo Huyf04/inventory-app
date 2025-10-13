@@ -78,7 +78,7 @@
             </tr>
           </thead>
           <tbody id="tbody" class="bg-white divide-y divide-gray-200">
-            <!-- Rows will be populated by JS -->
+            <!-- Rows sẽ được JS chèn vào -->
           </tbody>
         </table>
       </div>
@@ -121,7 +121,13 @@
           </div>
           <div>
             <label for="unit_price" class="block text-sm font-medium text-gray-700 mb-2">Đơn giá (VND)</label>
-            <input id="unit_price" type="number" step="0.01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" min="0" />
+            <input 
+              id="unit_price" 
+              type="text" 
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+              placeholder="Nhập đơn giá..." 
+              oninput="formatCurrency(this)"
+            />
           </div>
         </div>
 
@@ -147,6 +153,19 @@
 <script>
 const api = '/api/products.php';
 
+// Hàm định dạng số + phân tách nghìn + ký hiệu ₫
+function formatCurrency(input) {
+  // Loại bỏ mọi ký tự không phải chữ số
+  let value = input.value.replace(/[^\d]/g, '');
+  if (!value) {
+    input.value = '';
+    return;
+  }
+  // Dùng Intl.NumberFormat để phân tách nghìn theo locale vi-VN
+  value = new Intl.NumberFormat('vi-VN').format(value);
+  input.value = value + ' ₫';
+}
+
 async function fetchList(q = '') {
   let url = api;
   if (q) url += '?q=' + encodeURIComponent(q);
@@ -155,7 +174,7 @@ async function fetchList(q = '') {
   const tbody = document.getElementById('tbody');
   const emptyState = document.getElementById('emptyState');
   tbody.innerHTML = '';
-  if (data.length === 0) {
+  if (!Array.isArray(data) || data.length === 0) {
     emptyState.classList.remove('hidden');
     return;
   }
@@ -163,12 +182,15 @@ async function fetchList(q = '') {
   data.forEach(p => {
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-gray-50 transition-colors';
+    // Format đơn giá: ép kiểu Number rồi toLocaleString, rồi thêm ₫
+    const priceNum = Number(p.unit_price || 0);
+    const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
     tr.innerHTML = `
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
       <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">₫${(p.unit_price || 0).toLocaleString('vi-VN')}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
         <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
           <i class="fas fa-edit"></i> Sửa
@@ -228,19 +250,29 @@ async function edit(id) {
   document.getElementById('sku').value = p.sku || '';
   document.getElementById('name').value = p.name || '';
   document.getElementById('quantity').value = p.quantity || '';
-  document.getElementById('unit_price').value = p.unit_price || '';
+  // Khi hiển thị đơn giá vào ô form, chúng ta cũng cần format:
+  document.getElementById('unit_price').value = p.unit_price
+    ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫'
+    : '';
   document.getElementById('description').value = p.description || '';
-  document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
+  document.getElementById('formTitle').innerHTML =
+    '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
 }
 
 document.getElementById('productForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const id = document.getElementById('id').value;
+
+  // Lấy unit_price từ input đã format, loại bỏ ký tự không phải số
+  const unitPriceInput = document.getElementById('unit_price');
+  const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
+  const unit_price = parseFloat(cleanValue || 0);
+
   const payload = {
     sku: document.getElementById('sku').value,
     name: document.getElementById('name').value,
     quantity: parseInt(document.getElementById('quantity').value || 0),
-    unit_price: parseFloat(document.getElementById('unit_price').value || 0),
+    unit_price: unit_price,
     description: document.getElementById('description').value
   };
 
@@ -250,13 +282,13 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
   if (id) {
     res = await fetch(api + '?id=' + id, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
   } else {
     res = await fetch(api, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
   }
@@ -274,7 +306,9 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
   if (res.ok && data.success) {
     showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
     document.getElementById('productForm').reset();
-    document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
+    document.getElementById('id').value = '';
+    document.getElementById('formTitle').innerHTML =
+      '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
   } else {
     let msg = 'Có lỗi khi lưu sản phẩm';
     if (data.error) {
@@ -297,10 +331,11 @@ document.getElementById('btnRefresh').addEventListener('click', () => {
 document.getElementById('btnReset').addEventListener('click', () => {
   document.getElementById('productForm').reset();
   document.getElementById('id').value = '';
-  document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
+  document.getElementById('formTitle').innerHTML =
+    '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
 });
 
-// Initial load
+// Khởi đầu load
 fetchList();
 </script>
 </body>
