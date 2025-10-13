@@ -5,51 +5,140 @@
   <title>Quản lý vật tư</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Custom styles for better table responsiveness */
+    @media (max-width: 768px) {
+      .table-container {
+        overflow-x: auto;
+      }
+    }
+  </style>
 </head>
-<body class="p-6 bg-gray-50">
-  <div class="max-w-5xl mx-auto">
-    <h1 class="text-2xl font-bold mb-4">Quản lý vật tư</h1>
-
-    <div class="mb-4 flex gap-2">
-      <input id="q" class="border px-3 py-2 flex-1" placeholder="Tìm theo tên, SKU..." />
-      <button id="btnSearch" class="bg-blue-600 text-white px-4 py-2 rounded">Tìm</button>
-      <button id="btnRefresh" class="bg-gray-200 px-4 py-2 rounded">Làm mới</button>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-boxes text-3xl text-blue-600"></i>
+          <h1 class="text-3xl font-bold text-gray-900">Quản lý vật tư</h1>
+        </div>
+        <div class="hidden md:block text-sm text-gray-500">
+          Quản lý sản phẩm dễ dàng và hiệu quả
+        </div>
+      </div>
     </div>
 
-    <div id="messageBox" class="my-4 hidden p-3 rounded text-white"></div>
-
-    <div class="bg-white shadow rounded">
-      <table class="w-full table-auto" id="productTable">
-        <thead class="bg-gray-100">
-          <tr>
-            <th class="p-2">ID</th><th class="p-2">SKU</th><th class="p-2">Tên</th>
-            <th class="p-2">SL</th><th class="p-2">Giá</th><th class="p-2">Hành động</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <!-- Search Section -->
+    <div class="mb-6 bg-white shadow-sm rounded-lg p-4 border border-gray-200">
+      <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
+        <div class="flex-1 relative">
+          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          <input 
+            id="q" 
+            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
+            placeholder="Tìm theo tên, SKU..." 
+          />
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button id="btnSearch" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
+            <i class="fas fa-search"></i>
+            Tìm
+          </button>
+          <button id="btnRefresh" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
+            <i class="fas fa-refresh"></i>
+            Làm mới
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div class="mt-6 bg-white p-4 rounded shadow">
-      <h2 class="font-semibold mb-2" id="formTitle">Thêm sản phẩm</h2>
-      <form id="productForm" class="space-y-3">
+    <!-- Message Box -->
+    <div id="messageBox" class="my-4 hidden p-4 rounded-lg text-white shadow-lg transform transition-all duration-300"></div>
+
+    <!-- Products Table -->
+    <div class="mb-8 bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+        <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+          <i class="fas fa-list"></i>
+          Danh sách sản phẩm
+        </h2>
+      </div>
+      <div class="table-container">
+        <table class="w-full table-auto" id="productTable">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sản phẩm</th>
+              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
+              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn giá</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="bg-white divide-y divide-gray-200">
+            <!-- Rows will be populated by JS -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Empty state -->
+      <div id="emptyState" class="hidden text-center py-12">
+        <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+        <p class="text-gray-500 text-lg">Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!</p>
+      </div>
+    </div>
+
+    <!-- Product Form -->
+    <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2" id="formTitle">
+          <i class="fas fa-plus-circle text-green-600"></i>
+          Thêm sản phẩm mới
+        </h2>
+        <button id="btnToggleForm" class="md:hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors">
+          <i class="fas fa-chevron-up"></i>
+        </button>
+      </div>
+      <form id="productForm" class="space-y-6">
         <input type="hidden" id="id" />
 
-        <div class="grid grid-cols-2 gap-3">
-          <input id="sku" placeholder="SKU" class="border p-2 rounded w-full" required />
-          <input id="name" placeholder="Tên sản phẩm" class="border p-2 rounded w-full" required />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
+            <input id="sku" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
+          </div>
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Tên sản phẩm</label>
+            <input id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
+          </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <input id="quantity" type="number" placeholder="Số lượng" class="border p-2 rounded w-full" />
-          <input id="unit_price" type="number" step="0.01" placeholder="Đơn giá" class="border p-2 rounded w-full" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Số lượng</label>
+            <input id="quantity" type="number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" min="0" />
+          </div>
+          <div>
+            <label for="unit_price" class="block text-sm font-medium text-gray-700 mb-2">Đơn giá (VND)</label>
+            <input id="unit_price" type="number" step="0.01" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" min="0" />
+          </div>
         </div>
 
-        <textarea id="description" placeholder="Mô tả" class="border p-2 rounded w-full"></textarea>
+        <div>
+          <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
+          <textarea id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"></textarea>
+        </div>
 
-        <div class="flex gap-2">
-          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Lưu</button>
-          <button type="button" id="btnReset" class="bg-gray-200 px-4 py-2 rounded">Hủy</button>
+        <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-none">
+            <i class="fas fa-save"></i>
+            Lưu sản phẩm
+          </button>
+          <button type="button" id="btnReset" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-none">
+            <i class="fas fa-times"></i>
+            Hủy
+          </button>
         </div>
       </form>
     </div>
@@ -64,18 +153,31 @@ async function fetchList(q = '') {
   const res = await fetch(url);
   const data = await res.json();
   const tbody = document.getElementById('tbody');
+  const emptyState = document.getElementById('emptyState');
   tbody.innerHTML = '';
+  if (data.length === 0) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  emptyState.classList.add('hidden');
   data.forEach(p => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="p-2">${p.id}</td>
-      <td class="p-2">${p.sku||''}</td>
-      <td class="p-2">${p.name||''}</td>
-      <td class="p-2">${p.quantity}</td>
-      <td class="p-2">${p.unit_price}</td>
-      <td class="p-2">
-        <button onclick="edit(${p.id})" class="mr-2 text-blue-600">Sửa</button>
-        <button onclick="del(${p.id})" class="text-red-600">Xóa</button>
-      </td>`;
+    tr.className = 'hover:bg-gray-50 transition-colors';
+    tr.innerHTML = `
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+      <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">₫${(p.unit_price || 0).toLocaleString('vi-VN')}</td>
+      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+        <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+          <i class="fas fa-edit"></i> Sửa
+        </button>
+        <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+          <i class="fas fa-trash"></i> Xóa
+        </button>
+      </td>
+    `;
     tbody.appendChild(tr);
   });
 }
@@ -83,19 +185,24 @@ async function fetchList(q = '') {
 function showMessage(msg, type = 'success') {
   const box = document.getElementById('messageBox');
   box.textContent = msg;
-  box.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
+  box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
+  box.classList.add('scale-100');
   if (type === 'success') {
-    box.classList.add('bg-green-600');
+    box.classList.add('bg-green-500');
   } else {
-    box.classList.add('bg-red-600');
+    box.classList.add('bg-red-500');
   }
   setTimeout(() => {
-    box.classList.add('hidden');
+    box.classList.remove('scale-100');
+    box.classList.add('scale-95');
+    setTimeout(() => {
+      box.classList.add('hidden');
+    }, 300);
   }, 3000);
 }
 
 async function del(id) {
-  if (!confirm('Xóa sản phẩm này?')) return;
+  if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
   const res = await fetch(api + '?id=' + id, { method: 'DELETE' });
   let respData;
   try {
@@ -118,12 +225,12 @@ async function edit(id) {
   const res = await fetch(api + '?id=' + id);
   const p = await res.json();
   document.getElementById('id').value = p.id;
-  document.getElementById('sku').value = p.sku;
-  document.getElementById('name').value = p.name;
-  document.getElementById('quantity').value = p.quantity;
-  document.getElementById('unit_price').value = p.unit_price;
-  document.getElementById('description').value = p.description;
-  document.getElementById('formTitle').textContent = 'Sửa sản phẩm';
+  document.getElementById('sku').value = p.sku || '';
+  document.getElementById('name').value = p.name || '';
+  document.getElementById('quantity').value = p.quantity || '';
+  document.getElementById('unit_price').value = p.unit_price || '';
+  document.getElementById('description').value = p.description || '';
+  document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
 }
 
 document.getElementById('productForm').addEventListener('submit', async (e) => {
@@ -166,6 +273,8 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
 
   if (res.ok && data.success) {
     showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
+    document.getElementById('productForm').reset();
+    document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
   } else {
     let msg = 'Có lỗi khi lưu sản phẩm';
     if (data.error) {
@@ -174,8 +283,6 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     showMessage(msg, 'error');
   }
 
-  document.getElementById('productForm').reset();
-  document.getElementById('formTitle').textContent = 'Thêm sản phẩm';
   fetchList();
 });
 
@@ -189,9 +296,11 @@ document.getElementById('btnRefresh').addEventListener('click', () => {
 });
 document.getElementById('btnReset').addEventListener('click', () => {
   document.getElementById('productForm').reset();
-  document.getElementById('formTitle').textContent = 'Thêm sản phẩm';
+  document.getElementById('id').value = '';
+  document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
 });
 
+// Initial load
 fetchList();
 </script>
 </body>
