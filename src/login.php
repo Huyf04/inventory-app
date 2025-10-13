@@ -1,6 +1,6 @@
 <?php
 // src/api/auth.php
-
+session_start();  // Thêm dòng này ở đầu (hỗ trợ sessions cho auth)
 header('Content-Type: application/json; charset=utf-8');
 
 // Cấu hình / kết nối DB

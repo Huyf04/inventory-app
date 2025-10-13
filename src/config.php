@@ -1,5 +1,4 @@
 <?php
-session_start();  // Thêm dòng này ở đầu (hỗ trợ sessions cho auth)
 $pg = pg_connect(sprintf(
     "host=%s port=%s dbname=%s user=%s password=%s",
     getenv("DB_HOST"),

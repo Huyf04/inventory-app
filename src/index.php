@@ -1,4 +1,6 @@
   <?php
+  session_start();  // Thêm dòng này ở đầu (hỗ trợ sessions cho auth)
+
   require_once 'config.php';  // Đảm bảo session_start đã chạy từ config
 
   if (!isset($_SESSION['user_id'])) {
