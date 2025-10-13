@@ -1,4 +1,3 @@
-<!-- src/index.php -->
 <!doctype html>
 <html>
 <head>
@@ -11,56 +10,49 @@
   <div class="max-w-5xl mx-auto">
     <h1 class="text-2xl font-bold mb-4">Quản lý vật tư</h1>
 
-    <!-- Search -->
     <div class="mb-4 flex gap-2">
       <input id="q" class="border px-3 py-2 flex-1" placeholder="Tìm theo tên, SKU..." />
       <button id="btnSearch" class="bg-blue-600 text-white px-4 py-2 rounded">Tìm</button>
       <button id="btnRefresh" class="bg-gray-200 px-4 py-2 rounded">Làm mới</button>
     </div>
 
-    <!-- Message box -->
     <div id="messageBox" class="my-4 hidden p-3 rounded text-white"></div>
 
-    <!-- Table -->
     <div class="bg-white shadow rounded">
       <table class="w-full table-auto" id="productTable">
         <thead class="bg-gray-100">
           <tr>
-            <th class="p-2">ID</th><th class="p-2">SKU</th><th class="p-2">Tên</th><th class="p-2">SL</th><th class="p-2">Giá</th><th class="p-2">Hành động</th>
+            <th class="p-2">ID</th><th class="p-2">SKU</th><th class="p-2">Tên</th>
+            <th class="p-2">SL</th><th class="p-2">Giá</th><th class="p-2">Hành động</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
       </table>
     </div>
 
-    <!-- Form thêm/sửa -->
-   <div class="mt-6 bg-white p-4 rounded shadow">
-  <h2 class="font-semibold mb-2" id="formTitle">Thêm sản phẩm</h2>
-  <form id="productForm" class="space-y-3">
-    <input type="hidden" id="id" />
+    <div class="mt-6 bg-white p-4 rounded shadow">
+      <h2 class="font-semibold mb-2" id="formTitle">Thêm sản phẩm</h2>
+      <form id="productForm" class="space-y-3">
+        <input type="hidden" id="id" />
 
-    <!-- Hàng 1: SKU + Tên -->
-    <div class="grid grid-cols-2 gap-3">
-      <input id="sku" placeholder="SKU" class="border p-2 rounded w-full" required />
-      <input id="name" placeholder="Tên sản phẩm" class="border p-2 rounded w-full" required />
+        <div class="grid grid-cols-2 gap-3">
+          <input id="sku" placeholder="SKU" class="border p-2 rounded w-full" required />
+          <input id="name" placeholder="Tên sản phẩm" class="border p-2 rounded w-full" required />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <input id="quantity" type="number" placeholder="Số lượng" class="border p-2 rounded w-full" />
+          <input id="unit_price" type="number" step="0.01" placeholder="Đơn giá" class="border p-2 rounded w-full" />
+        </div>
+
+        <textarea id="description" placeholder="Mô tả" class="border p-2 rounded w-full"></textarea>
+
+        <div class="flex gap-2">
+          <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Lưu</button>
+          <button type="button" id="btnReset" class="bg-gray-200 px-4 py-2 rounded">Hủy</button>
+        </div>
+      </form>
     </div>
-
-    <!-- Hàng 2: Số lượng + Đơn giá -->
-    <div class="grid grid-cols-2 gap-3">
-      <input id="quantity" type="number" placeholder="Số lượng" class="border p-2 rounded w-full" />
-      <input id="unit_price" type="number" step="0.01" placeholder="Đơn giá" class="border p-2 rounded w-full" />
-    </div>
-
-    <!-- Hàng 3: Mô tả -->
-    <textarea id="description" placeholder="Mô tả" class="border p-2 rounded w-full"></textarea>
-
-    <!-- Buttons -->
-    <div class="flex gap-2">
-      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Lưu</button>
-      <button type="button" id="btnReset" class="bg-gray-200 px-4 py-2 rounded">Hủy</button>
-    </div>
-  </form>
-</div>
   </div>
 
 <script>
@@ -88,18 +80,15 @@ async function fetchList(q = '') {
   });
 }
 
-// Hiển thị thông báo
 function showMessage(msg, type = 'success') {
   const box = document.getElementById('messageBox');
   box.textContent = msg;
-  // xóa các class ẩn / màu cũ
   box.classList.remove('hidden', 'bg-green-600', 'bg-red-600');
   if (type === 'success') {
     box.classList.add('bg-green-600');
-  } else if (type === 'error') {
+  } else {
     box.classList.add('bg-red-600');
   }
-  // ẩn sau 3 giây
   setTimeout(() => {
     box.classList.add('hidden');
   }, 3000);
@@ -148,6 +137,8 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
     description: document.getElementById('description').value
   };
 
+  console.log("Gửi payload:", payload, "id:", id);
+
   let res;
   if (id) {
     res = await fetch(api + '?id=' + id, {
@@ -166,8 +157,10 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
   let data;
   try {
     data = await res.json();
+    console.log("Phản hồi:", data);
   } catch (err) {
     showMessage('Phản hồi không hợp lệ từ server', 'error');
+    console.error("Lỗi parse JSON:", err, "res text:", await res.text());
     return;
   }
 
