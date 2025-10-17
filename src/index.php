@@ -176,28 +176,27 @@
 
   async function fetchCategories() {
     try {
-      const res = await fetch(apiCategories);
-      
-      if (!res.ok) throw new Error('Lỗi khi fetch categories: ' + res.status);
-      const categories = await res.json();
-      console.log('Dữ liệu categories:', categories);  // Debug: Xem dữ liệu trong console
-      const select = document.getElementById('category_id');
-      select.innerHTML = '<option value="">Chọn danh mục</option>';
-      if (Array.isArray(categories)) {
-        categories.forEach(cat => {
-          const option = document.createElement('option');
-          option.value = cat.id;
-          option.textContent = cat.name;
-          select.appendChild(option);
-        });
-      } else {
-        console.error('Dữ liệu categories không phải mảng:', categories);
-      }
+        const res = await fetch(apiCategories);
+        if (!res.ok) throw new Error('Lỗi khi fetch categories: ' + res.status);
+        const categories = await res.json();
+        console.log('Dữ liệu categories:', categories);  // Debug
+        const select = document.getElementById('category_id');
+        select.innerHTML = '<option value="">Chọn danh mục</option>';
+        if (Array.isArray(categories)) {
+            categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.name;
+                select.appendChild(option);
+            });
+        } else {
+            console.error('Dữ liệu categories không phải mảng:', categories);
+        }
     } catch (error) {
-      console.error('Lỗi fetchCategories:', error);
-      showMessage('Lỗi khi tải danh mục: ' + error.message, 'error');
+        console.error('Lỗi fetchCategories:', error);
+        showMessage('Lỗi khi tải danh mục: ' + error.message, 'error');
     }
-  }
+}
 
   async function fetchList(q = '') {
     let url = apiProducts;
