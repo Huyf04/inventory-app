@@ -198,35 +198,36 @@
     const emptyState = document.getElementById('emptyState');
     tbody.innerHTML = '';
     if (!Array.isArray(data) || data.length === 0) {
-      emptyState.classList.remove('hidden');
-      return;
+        emptyState.classList.remove('hidden');
+        return;
     }
     emptyState.classList.add('hidden');
     data.forEach(p => {
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-gray-50 transition-colors';
-      const priceNum = Number(p.unit_price || 0);
-      const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
-      const categoryName = p.category_name || 'Không có';  // Giả sử API trả về category_name
-      tr.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-        <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-        <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>  <!-- Cột mới -->
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-            <i class="fas fa-edit"></i> Sửa
-          </button>
-          <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
-            <i class="fas fa-trash"></i> Xóa
-          </button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 transition-colors';
+        const priceNum = Number(p.unit_price || 0);
+        const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
+        const categoryName = p.category_name || 'Không có';  // Đảm bảo sử dụng p.category_name
+        tr.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+            <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>  <!-- Cột danh mục -->
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+                    <i class="fas fa-edit"></i> Sửa
+                </button>
+                <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+                    <i class="fas fa-trash"></i> Xóa
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
     });
-  }
+}
+
 
   function showMessage(msg, type = 'success') {
     const box = document.getElementById('messageBox');
