@@ -130,7 +130,14 @@
             />
           </div>
         </div>
-
+     <!-- Thêm phần mới này -->
+     <div>
+       <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
+       <select id="category_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+         <option value="">Chọn danh mục</option>
+         <!-- Các option sẽ được JS chèn vào -->
+       </select>
+     </div>
         <div>
           <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
           <textarea id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"></textarea>
@@ -152,8 +159,23 @@
 
 <script>
 const api = '/api/products.php';
-
+     const apiProducts = '/api/products.php';  // API cho products
+     const apiCategories = '/api/categories.php';  // API cho categories
 // Hàm định dạng số + phân tách nghìn + ký hiệu ₫
+     async function fetchCategories() {
+       const res = await fetch(apiCategories);
+       const categories = await res.json();  // Giả sử trả về mảng [{id: 1, name: 'Danh mục 1'}, ...]
+       const select = document.getElementById('category_id');
+       select.innerHTML = '<option value="">Chọn danh mục</option>';  // Reset
+       if (Array.isArray(categories)) {
+         categories.forEach(cat => {
+           const option = document.createElement('option');
+           option.value = cat.id;
+           option.textContent = cat.name;
+           select.appendChild(option);
+         });
+       }
+     }
 function formatCurrency(input) {
   // Loại bỏ mọi ký tự không phải chữ số
   let value = input.value.replace(/[^\d]/g, '');
@@ -167,10 +189,11 @@ function formatCurrency(input) {
 }
 
 async function fetchList(q = '') {
-  let url = api;
-  if (q) url += '?q=' + encodeURIComponent(q);
-  const res = await fetch(url);
-  const data = await res.json();
+         let url = apiProducts;
+       if (q) url += '?q=' + encodeURIComponent(q);
+       // Nếu muốn lọc theo category, có thể thêm: if (categoryId) url += '&category_id=' + categoryId;
+       const res = await fetch(url);
+       const data = await res.json();
   const tbody = document.getElementById('tbody');
   const emptyState = document.getElementById('emptyState');
   tbody.innerHTML = '';
@@ -243,54 +266,47 @@ async function del(id) {
   fetchList();
 }
 
-async function edit(id) {
-  const res = await fetch(api + '?id=' + id);
-  const p = await res.json();
-  document.getElementById('id').value = p.id;
-  document.getElementById('sku').value = p.sku || '';
-  document.getElementById('name').value = p.name || '';
-  document.getElementById('quantity').value = p.quantity || '';
-  // Khi hiển thị đơn giá vào ô form, chúng ta cũng cần format:
-  document.getElementById('unit_price').value = p.unit_price
-    ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫'
-    : '';
-  document.getElementById('description').value = p.description || '';
-  document.getElementById('formTitle').innerHTML =
-    '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
-}
+     async function edit(id) {
+       const res = await fetch(apiProducts + '?id=' + id);
+       const p = await res.json();
+       document.getElementById('id').value = p.id;
+       document.getElementById('sku').value = p.sku || '';
+       document.getElementById('name').value = p.name || '';
+       document.getElementById('quantity').value = p.quantity || '';
+       document.getElementById('unit_price').value = p.unit_price ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫' : '';
+       document.getElementById('description').value = p.description || '';
+       document.getElementById('category_id').value = p.category_id || '';  // Thêm dòng này
+       document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
+     }
 
-document.getElementById('productForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const id = document.getElementById('id').value;
-
-  // Lấy unit_price từ input đã format, loại bỏ ký tự không phải số
-  const unitPriceInput = document.getElementById('unit_price');
-  const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
-  const unit_price = parseFloat(cleanValue || 0);
-
-  const payload = {
-    sku: document.getElementById('sku').value,
-    name: document.getElementById('name').value,
-    quantity: parseInt(document.getElementById('quantity').value || 0),
-    unit_price: unit_price,
-    description: document.getElementById('description').value
-  };
-
-  console.log("Gửi payload:", payload, "id:", id);
-
-  let res;
-  if (id) {
-    res = await fetch(api + '?id=' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } else {
-    res = await fetch(api, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+     document.getElementById('productForm').addEventListener('submit', async (e) => {
+       e.preventDefault();
+       const id = document.getElementById('id').value;
+       const unitPriceInput = document.getElementById('unit_price');
+       const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
+       const unit_price = parseFloat(cleanValue || 0);
+       const category_id = document.getElementById('category_id').value;  // Lấy giá trị từ select
+       const payload = {
+         sku: document.getElementById('sku').value,
+         name: document.getElementById('name').value,
+         quantity: parseInt(document.getElementById('quantity').value || 0),
+         unit_price: unit_price,
+         description: document.getElementById('description').value,
+         category_id: category_id  // Thêm category_id vào payload
+       };
+       let res;
+       if (id) {
+         res = await fetch(apiProducts + '?id=' + id, {
+           method: 'PUT',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         });
+       } else {
+         res = await fetch(apiProducts, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(payload)
+         });
   }
 
   let data;
@@ -319,6 +335,10 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
 
   fetchList();
 });
+     document.addEventListener('DOMContentLoaded', () => {
+       fetchCategories();  // Load categories đầu tiên
+       fetchList();  // Sau đó load products
+     });
 
 document.getElementById('btnSearch').addEventListener('click', () => {
   const q = document.getElementById('q').value.trim();

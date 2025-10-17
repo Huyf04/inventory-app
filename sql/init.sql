@@ -31,3 +31,12 @@ INSERT INTO products (sku, name, description, quantity, unit_price) VALUES
 ('SKU002', 'Quần jean', 'Quần jean xanh nam', 30, 299000),
 ('SKU003', 'Giày thể thao', 'Giày sneaker nữ', 20, 499000)
 ON CONFLICT (sku) DO NOTHING;
+CREATE TABLE IF NOT EXISTS categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- Trong init.sql
+ALTER TABLE products ADD COLUMN category_id INT;
+ALTER TABLE products ADD FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL;

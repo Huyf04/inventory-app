@@ -67,11 +67,17 @@ if ($method === 'GET') {
     // Lấy danh sách (có limit / offset)
     $limit = intval($_GET['limit'] ?? 50);
     $offset = intval($_GET['offset'] ?? 0);
-    $res = pg_query_params(
-        $pg,
-        "SELECT * FROM products ORDER BY id DESC LIMIT $1 OFFSET $2",
-        [$limit, $offset]
-    );
+    $category_id = intval($_GET['category_id'] ?? 0);  // Thêm tham số mới
+        $query = "SELECT * FROM products WHERE 1=1";  // Bắt đầu query
+    $params = [];  // Mảng tham số
+    if ($category_id > 0) {
+        $query += " AND category_id = $1";
+        $params[] = $category_id;
+    }
+    $query += " ORDER BY id DESC LIMIT $".(count($params)+1)." OFFSET $".(count($params)+2);
+    $params[] = $limit;
+    $params[] = $offset;
+    $res = pg_query_params($pg, $query, $params);
     if (!$res) {
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
@@ -86,17 +92,17 @@ if ($method === 'POST') {
     $desc = trim($input['description'] ?? '');
     $qty = intval($input['quantity'] ?? 0);
     $price = floatval($input['unit_price'] ?? 0.0);
-
+$category_id = intval($input['category_id'] ?? 0);  // Giả sử là ID từ categories
     // Có thể kiểm tra validate (ví dụ: name không rỗng)
     if ($name === '') {
         jsonResponse(["error" => "Tên sản phẩm không được để trống"], 400);
     }
 
     $res = pg_query_params(
-        $pg,
-        "INSERT INTO products (sku, name, description, quantity, unit_price) 
-         VALUES ($1, $2, $3, $4, $5) RETURNING id",
-        [$sku, $name, $desc, $qty, $price]
+                $pg,
+        "INSERT INTO products (sku, name, description, quantity, unit_price, category_id) 
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+        [$sku, $name, $desc, $qty, $price, $category_id]
     );
     if (!$res) {
         jsonResponse(["error" => pg_last_error($pg)], 500);
@@ -116,6 +122,7 @@ if ($method === 'PUT') {
     $desc = trim($input['description'] ?? '');
     $qty = intval($input['quantity'] ?? 0);
     $price = floatval($input['unit_price'] ?? 0.0);
+    $category_id = intval($input['category_id'] ?? 0);
 
     if ($name === '') {
         jsonResponse(["error" => "Tên sản phẩm không được để trống"], 400);
@@ -124,14 +131,15 @@ if ($method === 'PUT') {
     $res = pg_query_params(
         $pg,
         "UPDATE products
-         SET sku = $1, name = $2, description = $3, quantity = $4, unit_price = $5, updated_at = NOW()
-         WHERE id = $6",
-        [$sku, $name, $desc, $qty, $price, $id]
+         SET sku = $1, name = $2, description = $3, quantity = $4, unit_price = $5, category_id = $6, updated_at = NOW()
+         WHERE id = $7",
+        [$sku, $name, $desc, $qty, $price, $category_id, $id]
     );
     if (!$res) {
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     jsonResponse(["success" => true], 200);
+    
 }
 
 if ($method === 'DELETE') {
