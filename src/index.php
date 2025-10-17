@@ -1,9 +1,9 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <title>Quản lý vật tư</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -36,10 +36,10 @@
       <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
         <div class="flex-1 relative">
           <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-          <input 
-            id="q" 
-            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-            placeholder="Tìm theo tên, SKU..." 
+          <input
+            id="q"
+            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            placeholder="Tìm theo tên, SKU..."
           />
         </div>
         <div class="flex gap-2 flex-wrap">
@@ -104,7 +104,6 @@
       </div>
       <form id="productForm" class="space-y-6">
         <input type="hidden" id="id" />
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
@@ -115,7 +114,6 @@
             <input id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
           </div>
         </div>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Số lượng</label>
@@ -123,16 +121,15 @@
           </div>
           <div>
             <label for="unit_price" class="block text-sm font-medium text-gray-700 mb-2">Đơn giá (VND)</label>
-            <input 
-              id="unit_price" 
-              type="text" 
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" 
-              placeholder="Nhập đơn giá..." 
+            <input
+              id="unit_price"
+              type="text"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Nhập đơn giá..."
               oninput="formatCurrency(this)"
             />
           </div>
         </div>
-
         <div>
           <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
           <select id="category_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
@@ -140,12 +137,10 @@
             <!-- Các option sẽ được JS chèn vào -->
           </select>
         </div>
-
         <div>
           <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
           <textarea id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"></textarea>
         </div>
-
         <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
           <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-none">
             <i class="fas fa-save"></i>
@@ -159,53 +154,40 @@
       </form>
     </div>
   </div>
-
   <script>
-  const apiProducts = '/api/products.php';
-  const apiCategories = '/api/categories.php';
+    const apiProducts = '/api/products.php';
+    const apiCategories = '/api/categories.php';
 
-  function formatCurrency(input) {
-    let value = input.value.replace(/[^\d]/g, '');
-    if (!value) {
-      input.value = '';
-      return;
+    function formatCurrency(input) {
+      let value = input.value.replace(/[^\d]/g, '');
+      if (!value) {
+        input.value = '';
+        return;
+      }
+      value = new Intl.NumberFormat('vi-VN').format(value);
+      input.value = value + ' ₫';
     }
-    value = new Intl.NumberFormat('vi-VN').format(value);
-    input.value = value + ' ₫';
-  }
 
-  async function fetchCategories() {
-    try {
-        const res = await fetch(apiCategories);
-        if (!res.ok) throw new Error('Lỗi khi fetch categories: ' + res.status);
-        const categories = await res.json();
-        console.log('Dữ liệu categories:', categories);  // Debug
-        const select = document.getElementById('category_id');
-        select.innerHTML = '<option value="">Chọn danh mục</option>';
-        if (Array.isArray(categories)) {
-            categories.forEach(cat => {
-                const option = document.createElement('option');
-                option.value = cat.id;
-                option.textContent = cat.name;
-                select.appendChild(option);
-            });
-        } else {
-            console.error('Dữ liệu categories không phải mảng:', categories);
-        }
-    } catch (error) {
-        console.error('Lỗi fetchCategories:', error);
-        showMessage('Lỗi khi tải danh mục: ' + error.message, 'error');
+    async function fetchCategories() {
+      const res = await fetch(apiCategories);
+      const categories = await res.json();
+      const select = document.getElementById('category_id');
+      select.innerHTML = '<option value="">Chọn danh mục</option>';
+      if (Array.isArray(categories)) {
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.id;
+          option.textContent = cat.name;
+          select.appendChild(option);
+        });
+      }
     }
-}
 
-  async function fetchList(q = '') {
-    let url = apiProducts;
-    if (q) url += '?q=' + encodeURIComponent(q);
-    try {
+    async function fetchList(q = '') {
+      let url = apiProducts;
+      if (q) url += '?q=' + encodeURIComponent(q);
       const res = await fetch(url);
-      if (!res.ok) throw new Error('Lỗi khi fetch products: ' + res.status);
       const data = await res.json();
-      console.log('Dữ liệu products:', data);  // Debug: Xem dữ liệu trong console
       const tbody = document.getElementById('tbody');
       const emptyState = document.getElementById('emptyState');
       tbody.innerHTML = '';
@@ -221,60 +203,52 @@
         const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
         const categoryName = p.category_name || 'Không có';
         tr.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-            <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-                    <i class="fas fa-edit"></i> Sửa
-                </button>
-                <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
-                    <i class="fas fa-trash"></i> Xóa
-                </button>
-            </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+          <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+          <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+              <i class="fas fa-edit"></i> Sửa
+            </button>
+            <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+              <i class="fas fa-trash"></i> Xóa
+            </button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
-    } catch (error) {
-      console.error('Lỗi fetchList:', error);
-      showMessage('Lỗi khi tải sản phẩm: ' + error.message, 'error');
     }
-  }
 
-  function showMessage(msg, type = 'success') {
-    const box = document.getElementById('messageBox');
-    box.textContent = msg;
-    box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
-    box.classList.add('scale-100');
-    if (type === 'success') box.classList.add('bg-green-500');
-    else box.classList.add('bg-red-500');
-    setTimeout(() => {
-      box.classList.remove('scale-100');
-      box.classList.add('scale-95');
-      setTimeout(() => box.classList.add('hidden'), 300);
-    }, 3000);
-  }
+    function showMessage(msg, type = 'success') {
+      const box = document.getElementById('messageBox');
+      box.textContent = msg;
+      box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
+      box.classList.add('scale-100');
+      if (type === 'success') box.classList.add('bg-green-500');
+      else box.classList.add('bg-red-500');
+      setTimeout(() => {
+        box.classList.remove('scale-100');
+        box.classList.add('scale-95');
+        setTimeout(() => box.classList.add('hidden'), 300);
+      }, 3000);
+    }
 
-  async function del(id) {
-    if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
-    try {
-      const res = await fetch(apiProducts + '?id=' + id, { method: 'DELETE' });
+    async function del(id) {
+      if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
+      const res = await fetch(apiProducts + '?id=' + id, {
+        method: 'DELETE'
+      });
       const data = await res.json();
       if (res.ok && data.success) showMessage('Xóa sản phẩm thành công', 'success');
       else showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
       fetchList();
-    } catch (error) {
-      showMessage('Lỗi khi xóa sản phẩm: ' + error.message, 'error');
     }
-  }
 
-  async function edit(id) {
-    try {
+    async function edit(id) {
       const res = await fetch(apiProducts + '?id=' + id);
-      if (!res.ok) throw new Error('Lỗi khi fetch sản phẩm');
       const p = await res.json();
       document.getElementById('id').value = p.id;
       document.getElementById('sku').value = p.sku || '';
@@ -284,48 +258,62 @@
       document.getElementById('description').value = p.description || '';
       document.getElementById('category_id').value = p.category_id || '';
       document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
-    } catch (error) {
-      showMessage('Lỗi khi tải sản phẩm để sửa: ' + error.message, 'error');
     }
-  }
 
-  document.getElementById('productForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('id').value;
-    const unitPriceInput = document.getElementById('unit_price');
-    const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
-    const unit_price = parseFloat(cleanValue || 0);
-    const category_id = document.getElementById('category_id').value;
-    const payload = {
+    document.getElementById('productForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = document.getElementById('id').value;
+      const unitPriceInput = document.getElementById('unit_price');
+      const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
+      const unit_price = parseFloat(cleanValue || 0);
+      const category_id = document.getElementById('category_id').value;
+      const payload = {
         sku: document.getElementById('sku').value,
         name: document.getElementById('name').value,
         quantity: parseInt(document.getElementById('quantity').value || 0),
-        unit_price: unit_price,
+        unit_price,
         description: document.getElementById('description').value,
-        category_id: category_id
-    };
-    let res;
-    if (id) {
-        res = await fetch(apiProducts + '?id=' + id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-    } else {
-        res = await fetch(apiProducts, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-    }
-    const data = await res.json();
-    if (res.ok && data.success) {
+        category_id
+      };
+      let res = id ? await fetch(apiProducts + '?id=' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }) : await fetch(apiProducts, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
         showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
         document.getElementById('productForm').reset();
         document.getElementById('id').value = '';
         document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
-        fetchList();
-    } else {
-        showMessage('Lỗi: ' + (data.error || ''), 'error');
-    }
-});
+      } else showMessage('Lỗi: ' + (data.error || ''), 'error');
+      fetchList();
+    });
+
+    document.getElementById('btnSearch').addEventListener('click', () => {
+      const q = document.getElementById('q').value.trim();
+      fetchList(q);
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', () => {
+      document.getElementById('q').value = '';
+      fetchList();
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      document.getElementById('productForm').reset();
+      document.getElementById('id').value = '';
+      document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchCategories();
+      fetchList();
+    });
+  </script>
+</body>
+</html>
