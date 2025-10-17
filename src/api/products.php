@@ -64,26 +64,21 @@ if ($method === 'GET') {
         jsonResponse($rows, 200);
     }
 
-    // Lấy danh sách (có limit / offset)
+    // Lấy danh sách (có limit / offset) - PHẦN ĐÃ CẬP NHẬT
     $limit = intval($_GET['limit'] ?? 50);
     $offset = intval($_GET['offset'] ?? 0);
-    $category_id = intval($_GET['category_id'] ?? 0);  // Thêm tham số mới
-        $query = "SELECT * FROM products WHERE 1=1";  // Bắt đầu query
-    $params = [];  // Mảng tham số
-    if ($category_id > 0) {
-        $query += " AND category_id = $1";
-        $params[] = $category_id;
-    }
-    $query += " ORDER BY id DESC LIMIT $".(count($params)+1)." OFFSET $".(count($params)+2);
-    $params[] = $limit;
-    $params[] = $offset;
-    $res = pg_query_params($pg, $query, $params);
+    $res = pg_query_params(
+        $pg,
+        "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id ORDER BY p.id DESC LIMIT $1 OFFSET $2",
+        [$limit, $offset]
+    );
     if (!$res) {
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     $rows = pg_fetch_all($res) ?: [];
     jsonResponse($rows, 200);
 }
+
 
 if ($method === 'POST') {
     // Tạo mới

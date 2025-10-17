@@ -73,6 +73,7 @@
               <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
               <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sản phẩm</th>
+              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Danh mục</th> <!-- Thêm cột mới -->
               <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
               <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn giá</th>
               <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
@@ -131,14 +132,15 @@
             />
           </div>
         </div>
-     <!-- Thêm phần mới này -->
-     <div>
-       <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-       <select id="category_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-         <option value="">Chọn danh mục</option>
-         <!-- Các option sẽ được JS chèn vào -->
-       </select>
-     </div>
+
+        <div>
+          <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
+          <select id="category_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+            <option value="">Chọn danh mục</option>
+            <!-- Các option sẽ được JS chèn vào -->
+          </select>
+        </div>
+
         <div>
           <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
           <textarea id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"></textarea>
@@ -158,206 +160,145 @@
     </div>
   </div>
 
-<script>
-const api = '/api/products.php';
-     const apiProducts = '/api/products.php';  // API cho products
-     const apiCategories = '/api/categories.php';  // API cho categories
-// Hàm định dạng số + phân tách nghìn + ký hiệu ₫
-     async function fetchCategories() {
-       const res = await fetch(apiCategories);
-       const categories = await res.json();  // Giả sử trả về mảng [{id: 1, name: 'Danh mục 1'}, ...]
-       const select = document.getElementById('category_id');
-       select.innerHTML = '<option value="">Chọn danh mục</option>';  // Reset
-       if (Array.isArray(categories)) {
-         categories.forEach(cat => {
-           const option = document.createElement('option');
-           option.value = cat.id;
-           option.textContent = cat.name;
-           select.appendChild(option);
-         });
-       }
-     }
-function formatCurrency(input) {
-  // Loại bỏ mọi ký tự không phải chữ số
-  let value = input.value.replace(/[^\d]/g, '');
-  if (!value) {
-    input.value = '';
-    return;
-  }
-  // Dùng Intl.NumberFormat để phân tách nghìn theo locale vi-VN
-  value = new Intl.NumberFormat('vi-VN').format(value);
-  input.value = value + ' ₫';
-}
+  <script>
+  const apiProducts = '/api/products.php';
+  const apiCategories = '/api/categories.php';
 
-async function fetchList(q = '') {
-         let url = apiProducts;
-       if (q) url += '?q=' + encodeURIComponent(q);
-       // Nếu muốn lọc theo category, có thể thêm: if (categoryId) url += '&category_id=' + categoryId;
-       const res = await fetch(url);
-       const data = await res.json();
-  const tbody = document.getElementById('tbody');
-  const emptyState = document.getElementById('emptyState');
-  tbody.innerHTML = '';
-  if (!Array.isArray(data) || data.length === 0) {
-    emptyState.classList.remove('hidden');
-    return;
-  }
-  emptyState.classList.add('hidden');
-  data.forEach(p => {
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-gray-50 transition-colors';
-    // Format đơn giá: ép kiểu Number rồi toLocaleString, rồi thêm ₫
-    const priceNum = Number(p.unit_price || 0);
-    const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
-    tr.innerHTML = `
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-      <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-          <i class="fas fa-edit"></i> Sửa
-        </button>
-        <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
-          <i class="fas fa-trash"></i> Xóa
-        </button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function showMessage(msg, type = 'success') {
-  const box = document.getElementById('messageBox');
-  box.textContent = msg;
-  box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
-  box.classList.add('scale-100');
-  if (type === 'success') {
-    box.classList.add('bg-green-500');
-  } else {
-    box.classList.add('bg-red-500');
-  }
-  setTimeout(() => {
-    box.classList.remove('scale-100');
-    box.classList.add('scale-95');
-    setTimeout(() => {
-      box.classList.add('hidden');
-    }, 300);
-  }, 3000);
-}
-
-async function del(id) {
-  if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
-  const res = await fetch(api + '?id=' + id, { method: 'DELETE' });
-  let respData;
-  try {
-    respData = await res.json();
-  } catch (e) {
-    showMessage('Phản hồi không hợp lệ khi xóa', 'error');
-    return;
-  }
-  if (res.ok && respData.success) {
-    showMessage('Xóa sản phẩm thành công', 'success');
-  } else {
-    let msg = 'Lỗi khi xóa sản phẩm';
-    if (respData.error) msg += ': ' + respData.error;
-    showMessage(msg, 'error');
-  }
-  fetchList();
-}
-
-     async function edit(id) {
-       const res = await fetch(apiProducts + '?id=' + id);
-       const p = await res.json();
-       document.getElementById('id').value = p.id;
-       document.getElementById('sku').value = p.sku || '';
-       document.getElementById('name').value = p.name || '';
-       document.getElementById('quantity').value = p.quantity || '';
-       document.getElementById('unit_price').value = p.unit_price ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫' : '';
-       document.getElementById('description').value = p.description || '';
-       document.getElementById('category_id').value = p.category_id || '';  // Thêm dòng này
-       document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
-     }
-
-     document.getElementById('productForm').addEventListener('submit', async (e) => {
-       e.preventDefault();
-       const id = document.getElementById('id').value;
-       const unitPriceInput = document.getElementById('unit_price');
-       const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
-       const unit_price = parseFloat(cleanValue || 0);
-       const category_id = document.getElementById('category_id').value;  // Lấy giá trị từ select
-       const payload = {
-         sku: document.getElementById('sku').value,
-         name: document.getElementById('name').value,
-         quantity: parseInt(document.getElementById('quantity').value || 0),
-         unit_price: unit_price,
-         description: document.getElementById('description').value,
-         category_id: category_id  // Thêm category_id vào payload
-       };
-       let res;
-       if (id) {
-         res = await fetch(apiProducts + '?id=' + id, {
-           method: 'PUT',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify(payload)
-         });
-       } else {
-         res = await fetch(apiProducts, {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify(payload)
-         });
-  }
-
-  let data;
-  try {
-    data = await res.json();
-    console.log("Phản hồi:", data);
-  } catch (err) {
-    showMessage('Phản hồi không hợp lệ từ server', 'error');
-    console.error("Lỗi parse JSON:", err, "res text:", await res.text());
-    return;
-  }
-
-  if (res.ok && data.success) {
-    showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
-    document.getElementById('productForm').reset();
-    document.getElementById('id').value = '';
-    document.getElementById('formTitle').innerHTML =
-      '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
-  } else {
-    let msg = 'Có lỗi khi lưu sản phẩm';
-    if (data.error) {
-      msg += ': ' + data.error;
+  function formatCurrency(input) {
+    let value = input.value.replace(/[^\d]/g, '');
+    if (!value) {
+      input.value = '';
+      return;
     }
-    showMessage(msg, 'error');
+    value = new Intl.NumberFormat('vi-VN').format(value);
+    input.value = value + ' ₫';
   }
 
-  fetchList();
-});
-     document.addEventListener('DOMContentLoaded', () => {
-       fetchCategories();  // Load categories đầu tiên
-       fetchList();  // Sau đó load products
-     });
+  async function fetchCategories() {
+    const res = await fetch(apiCategories);
+    const categories = await res.json();
+    const select = document.getElementById('category_id');
+    select.innerHTML = '<option value="">Chọn danh mục</option>';
+    if (Array.isArray(categories)) {
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+    }
+  }
 
-document.getElementById('btnSearch').addEventListener('click', () => {
-  const q = document.getElementById('q').value.trim();
-  fetchList(q);
-});
-document.getElementById('btnRefresh').addEventListener('click', () => {
-  document.getElementById('q').value = '';
-  fetchList();
-});
-document.getElementById('btnReset').addEventListener('click', () => {
-  document.getElementById('productForm').reset();
-  document.getElementById('id').value = '';
-  document.getElementById('formTitle').innerHTML =
-    '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
+  async function fetchList(q = '') {
+    let url = apiProducts;
+    if (q) url += '?q=' + encodeURIComponent(q);
+    const res = await fetch(url);
+    const data = await res.json();
+    const tbody = document.getElementById('tbody');
+    const emptyState = document.getElementById('emptyState');
+    tbody.innerHTML = '';
+    if (!Array.isArray(data) || data.length === 0) {
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+    data.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-gray-50 transition-colors';
+      const priceNum = Number(p.unit_price || 0);
+      const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
+      const categoryName = p.category_name || 'Không có';  // Giả sử API trả về category_name
+      tr.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+        <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+        <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>  <!-- Cột mới -->
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+          <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+            <i class="fas fa-edit"></i> Sửa
+          </button>
+          <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+            <i class="fas fa-trash"></i> Xóa
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function showMessage(msg, type = 'success') {
+    const box = document.getElementById('messageBox');
+    box.textContent = msg;
+    box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
+    box.classList.add('scale-100');
+    if (type === 'success') box.classList.add('bg-green-500');
+    else box.classList.add('bg-red-500');
+    setTimeout(() => {
+      box.classList.remove('scale-100');
+      box.classList.add('scale-95');
+      setTimeout(() => box.classList.add('hidden'), 300);
+    }, 3000);
+  }
+
+  async function del(id) {
+    if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
+    const res = await fetch(apiProducts + '?id=' + id, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok && data.success) showMessage('Xóa sản phẩm thành công', 'success');
+    else showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
+    fetchList();
+  }
+
+  async function edit(id) {
+    const res = await fetch(apiProducts + '?id=' + id);
+    const p = await res.json();
+    document.getElementById('id').value = p.id;
+    document.getElementById('sku').value = p.sku || '';
+    document.getElementById('name').value = p.name || '';
+    document.getElementById('quantity').value = p.quantity || '';
+    document.getElementById('unit_price').value = p.unit_price ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫' : '';
+    document.getElementById('description').value = p.description || '';
+    document.getElementById('category_id').value = p.category_id || '';
+    document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
+  }
+
+  document.getElementById('productForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('id').value;
+    const unitPriceInput = document.getElementById('unit_price');
+    const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
+    const unit_price = parseFloat(cleanValue || 0);
+    const category_id = document.getElementById('category_id').value;
+    const payload = { sku: document.getElementById('sku').value, name: document.getElementById('name').value, quantity: parseInt(document.getElementById('quantity').value || 0), unit_price, description: document.getElementById('description').value, category_id };
+    let res = id ? await fetch(apiProducts + '?id=' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) : await fetch(apiProducts, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
+      document.getElementById('productForm').reset();
+      document.getElementById('id').value = '';
+      document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
+    } else showMessage('Lỗi: ' + (data.error || ''), 'error');
+    fetchList();
+  });
+
+  document.getElementById('btnSearch').addEventListener('click', () => {
+    const q = document.getElementById('q').value.trim();
+    fetchList(q);
+  });
+  document.getElementById('btnRefresh').addEventListener('click', () => {
+    document.getElementById('q').value = '';
+    fetchList();
+  });
+  document.getElementById('btnReset').addEventListener('click', () => {
+    document.getElementById('productForm').reset();  // Reset toàn bộ form
+    document.getElementById('id').value = '';  // Xóa giá trị ID
+    document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';  // Đặt lại tiêu đề form
 });
 
-// Khởi đầu load
-fetchList();
-</script>
-</body>
-</html>
+// Kết thúc script
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCategories();  // Load categories đầu tiên
+    fetchList();  // Sau đó load products
+});
