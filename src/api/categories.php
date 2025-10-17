@@ -24,6 +24,12 @@ function jsonResponse($data, $code = 200) {
 
 global $pg;  // Kết nối DB từ config.php
 
+if (!isset($pg)) {
+    error_log('Lỗi: Kết nối DB không tồn tại');  // Log lỗi để debug
+    jsonResponse(["error" => "Kết nối DB thất bại"], 500);
+    exit;
+}
+
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
     $input = [];
@@ -37,6 +43,7 @@ if ($method === 'GET') {
         $id = intval($_GET['id']);
         $res = pg_query_params($pg, "SELECT * FROM categories WHERE id = $1", [$id]);
         if (!$res) {
+            error_log('Lỗi query GET id: ' . pg_last_error($pg));  // Log lỗi
             jsonResponse(["error" => pg_last_error($pg)], 500);
         }
         $row = pg_fetch_assoc($res);
@@ -52,6 +59,7 @@ if ($method === 'GET') {
         [$limit, $offset]
     );
     if (!$res) {
+        error_log('Lỗi query GET list: ' . pg_last_error($pg));  // Log lỗi
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     $rows = pg_fetch_all($res) ?: [];
@@ -73,6 +81,7 @@ if ($method === 'POST') {
         [$name, $description]
     );
     if (!$res) {
+        error_log('Lỗi query POST: ' . pg_last_error($pg));  // Log lỗi
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     $row = pg_fetch_assoc($res);
@@ -98,6 +107,7 @@ if ($method === 'PUT') {
         [$name, $description, $id]
     );
     if (!$res) {
+        error_log('Lỗi query PUT: ' . pg_last_error($pg));  // Log lỗi
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     jsonResponse(["success" => true], 200);
@@ -110,6 +120,7 @@ if ($method === 'DELETE') {
     $id = intval($_GET['id']);
     $res = pg_query_params($pg, "DELETE FROM categories WHERE id = $1", [$id]);
     if (!$res) {
+        error_log('Lỗi query DELETE: ' . pg_last_error($pg));  // Log lỗi
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     jsonResponse(["success" => true], 200);

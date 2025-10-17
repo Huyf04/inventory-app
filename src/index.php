@@ -177,6 +177,7 @@
   async function fetchCategories() {
     try {
       const res = await fetch(apiCategories);
+      
       if (!res.ok) throw new Error('Lỗi khi fetch categories: ' + res.status);
       const categories = await res.json();
       console.log('Dữ liệu categories:', categories);  // Debug: Xem dữ liệu trong console
