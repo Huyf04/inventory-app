@@ -39,7 +39,7 @@ if ($method === 'GET') {
     // Lấy 1 bản ghi theo id
     if (isset($_GET['id'])) {
         $id = intval($_GET['id']);
-        $res = pg_query_params($pg, "SELECT * FROM products WHERE id = $1", [$id]);
+        $res = pg_query_params($pg, "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.id = $1", [$id]);
         if (!$res) {
             jsonResponse(["error" => pg_last_error($pg)], 500);
         }
@@ -52,9 +52,7 @@ if ($method === 'GET') {
         $q = "%" . $_GET['q'] . "%";
         $res = pg_query_params(
             $pg,
-            "SELECT * FROM products 
-             WHERE name ILIKE $1 OR sku ILIKE $1 OR description ILIKE $1
-             ORDER BY updated_at DESC",
+            "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id WHERE p.name ILIKE $1 OR p.sku ILIKE $1 OR p.description ILIKE $1 ORDER BY p.updated_at DESC",
             [$q]
         );
         if (!$res) {
@@ -64,19 +62,20 @@ if ($method === 'GET') {
         jsonResponse($rows, 200);
     }
 
-    // Lấy danh sách (có limit / offset)
+    // Lấy danh sách (có limit / offset và lọc theo category_id)
     $limit = intval($_GET['limit'] ?? 50);
     $offset = intval($_GET['offset'] ?? 0);
     $category_id = intval($_GET['category_id'] ?? 0);  // Thêm tham số mới
-        $query = "SELECT * FROM products WHERE 1=1";  // Bắt đầu query
-    $params = [];  // Mảng tham số
+    $query = "SELECT p.*, c.name as category_name FROM products p LEFT JOIN categories c ON p.category_id = c.id";
+    $params = [];
     if ($category_id > 0) {
-        $query += " AND category_id = $1";
+        $query += " WHERE p.category_id = $" . (count($params) + 1);
         $params[] = $category_id;
     }
-    $query += " ORDER BY id DESC LIMIT $".(count($params)+1)." OFFSET $".(count($params)+2);
+    $query += " ORDER BY p.id DESC LIMIT $" . (count($params) + 1) . " OFFSET $" . (count($params) + 2);
     $params[] = $limit;
     $params[] = $offset;
+    
     $res = pg_query_params($pg, $query, $params);
     if (!$res) {
         jsonResponse(["error" => pg_last_error($pg)], 500);
@@ -92,16 +91,14 @@ if ($method === 'POST') {
     $desc = trim($input['description'] ?? '');
     $qty = intval($input['quantity'] ?? 0);
     $price = floatval($input['unit_price'] ?? 0.0);
-$category_id = intval($input['category_id'] ?? 0);  // Giả sử là ID từ categories
-    // Có thể kiểm tra validate (ví dụ: name không rỗng)
+    $category_id = intval($input['category_id'] ?? 0);  // Giả sử là ID từ categories
     if ($name === '') {
         jsonResponse(["error" => "Tên sản phẩm không được để trống"], 400);
     }
 
     $res = pg_query_params(
-                $pg,
-        "INSERT INTO products (sku, name, description, quantity, unit_price, category_id) 
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+        $pg,
+        "INSERT INTO products (sku, name, description, quantity, unit_price, category_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
         [$sku, $name, $desc, $qty, $price, $category_id]
     );
     if (!$res) {
@@ -112,7 +109,6 @@ $category_id = intval($input['category_id'] ?? 0);  // Giả sử là ID từ ca
 }
 
 if ($method === 'PUT') {
-    // Cập nhật
     if (!isset($_GET['id'])) {
         jsonResponse(["error" => "Thiếu id"], 400);
     }
@@ -130,16 +126,13 @@ if ($method === 'PUT') {
 
     $res = pg_query_params(
         $pg,
-        "UPDATE products
-         SET sku = $1, name = $2, description = $3, quantity = $4, unit_price = $5, category_id = $6, updated_at = NOW()
-         WHERE id = $7",
+        "UPDATE products SET sku = $1, name = $2, description = $3, quantity = $4, unit_price = $5, category_id = $6, updated_at = NOW() WHERE id = $7",
         [$sku, $name, $desc, $qty, $price, $category_id, $id]
     );
     if (!$res) {
         jsonResponse(["error" => pg_last_error($pg)], 500);
     }
     jsonResponse(["success" => true], 200);
-    
 }
 
 if ($method === 'DELETE') {
