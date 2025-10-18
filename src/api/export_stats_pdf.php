@@ -1,6 +1,7 @@
 <?php
-require_once '../config.php';
-require_once '../vendor/autoload.php';
+ini_set('display_errors', 0);
+require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../config.php';
 
 use Mpdf\Mpdf;
 
