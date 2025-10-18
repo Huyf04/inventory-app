@@ -197,17 +197,17 @@
       }
     }
 
-         async function fetchList(q = '') {
+              async function fetchList(q = '') {
        let url = apiProducts;
        if (q) url += '?q=' + encodeURIComponent(q);
        console.log('Fetching from:', url);
        try {
          const res = await fetch(url);
          console.log('Response status:', res.status, 'Status text:', res.statusText);
-         const responseText = await res.text();  // Lấy response dưới dạng text trước
+         const responseText = await res.text();  // Lấy response dưới dạng text
          console.log('Response body (full text):', responseText);  // Log toàn bộ nội dung response
          if (!res.ok) {
-           showMessage('Lỗi server: ' + res.status + ' - ' + responseText.substring(0, 200), 'error');  // Log ngắn gọn
+           showMessage('Lỗi server: ' + res.status + ' - ' + responseText.substring(0, 200), 'error');
            return;
          }
          // Chỉ parse JSON nếu status OK
@@ -254,6 +254,7 @@
          showMessage('Lỗi mạng khi tải danh sách sản phẩm: ' + error.message, 'error');
        }
      }
+     
      
 
     function showMessage(msg, type = 'success') {
