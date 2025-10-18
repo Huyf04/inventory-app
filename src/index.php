@@ -292,6 +292,8 @@ fetchList();
     async function edit(id) {
   try {
     const res = await fetch(apiProducts + '?id=' + id);
+    const text = await res.text();
+    console.log('Edit response text:', text); // 👈 xem nội dung trả về
     if (!res.ok) {
       showMessage('Lỗi khi tải sản phẩm để sửa', 'error');
       return;

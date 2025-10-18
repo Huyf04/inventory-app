@@ -81,6 +81,7 @@ $params[] = $limit;
 $params[] = $offset;
 
 $res = pg_query_params($pg, $query, $params);
+
 if (!$res) {
     jsonResponse(["error" => pg_last_error($pg)], 500);
 }
