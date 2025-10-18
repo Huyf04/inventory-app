@@ -1,6 +1,8 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/src/config.php'; // nếu config.php nằm trong src
+// ...
+require_once __DIR__ . '/config.php';
+
 
 // giả sử bạn dùng PostgreSQL như hiện tại
 // Ví dụ: tổng sản phẩm
