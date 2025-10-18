@@ -2,11 +2,7 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-
-
-require_once __DIR__ . '/../../src/vendor/autoload.php';
-
-
+require_once __DIR__ . '/../../vendor/autoload.php'; // ✅ Sửa lại đúng đường dẫn
 require_once __DIR__ . '/../config.php';
 
 use Mpdf\Mpdf;
