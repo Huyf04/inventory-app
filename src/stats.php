@@ -31,10 +31,15 @@
     </div>
 
     <!-- Biểu đồ phân bố theo danh mục -->
-    <div class="bg-white shadow rounded-lg p-6 mb-8">
-      <h2 class="text-lg font-semibold text-gray-800 mb-4">Sản phẩm theo danh mục</h2>
-      <canvas id="chartByCategory" height="150"></canvas>
-    </div>
+   <!-- HTML phần biểu đồ phân bố theo danh mục -->
+<div class="bg-white shadow rounded-lg p-6 mb-8">
+  <h2 class="text-lg font-semibold text-gray-800 mb-4">Sản phẩm theo danh mục</h2>
+  <div class="w-full max-w-md mx-auto" style="height:200px;">
+    <canvas id="chartByCategory"></canvas>
+  </div>
+</div>
+
+   
 
     <!-- Biểu đồ Top 5 sản phẩm tồn nhiều -->
     <div class="bg-white shadow rounded-lg p-6 mb-8">
@@ -62,31 +67,30 @@
     }
 
     async function loadChartByCategory() {
-      try {
-        const res = await fetch(byCategoryApi);
-        if (!res.ok) throw new Error('Status ' + res.status);
-        const data = await res.json();
-        const labels = data.map(item => item.category_name);
-        const values = data.map(item => item.count);
-
-        new Chart(document.getElementById('chartByCategory'), {
-          type: 'doughnut',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Số lượng',
-              data: values,
-              backgroundColor: labels.map((_, i) => `hsl(${i * 60}, 70%, 60%)`)
-            }]
-          },
-          options: {
-            plugins: { legend: { position: 'bottom' } }
-          }
-        });
-      } catch (err) {
-        console.error('Error loading category chart:', err);
+  const res = await fetch(byCategoryApi);
+  const data = await res.json();
+  const labels = data.map(item => item.category_name);
+  const values = data.map(item => item.count);
+  const ctx = document.getElementById('chartByCategory').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: labels.map((_, i) => `hsl(${(i * 360 / labels.length) % 360}, 70%, 60%)`)
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
       }
     }
+  });
+}
+
 
     async function loadChartTopFive() {
       try {
