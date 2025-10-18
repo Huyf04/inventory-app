@@ -9,7 +9,7 @@ if (ob_get_length()) {
     ob_end_clean();
 }
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../config.php';
 use Mpdf\Mpdf;
 
