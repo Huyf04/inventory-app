@@ -197,63 +197,64 @@
       }
     }
 
-    async function fetchList(q = '') {
-      try {
-        let url = apiProducts;
-        if (q) url += '?q=' + encodeURIComponent(q);
-        console.log('Fetching products from:', url);  // Debug log
-        const res = await fetch(url);
-        console.log('Products response status:', res.status);  // Debug log
-        if (!res.ok) {
-          console.error('Failed to fetch products:', res.statusText);
-          showMessage('Lỗi khi tải danh sách sản phẩm: ' + res.statusText, 'error');
-          return;
-        }
-        const data = await res.json();
-        console.log('Products data received:', data);  // Debug log
-        const tbody = document.getElementById('tbody');
-        const emptyState = document.getElementById('emptyState');
-        tbody.innerHTML = '';
-        // Kiểm tra nếu data là mảng và có dữ liệu
-        if (Array.isArray(data) && data.length > 0) {
-          emptyState.classList.add('hidden');
-          data.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.className = 'hover:bg-gray-50 transition-colors';
-            const priceNum = Number(p.unit_price || 0);
-            const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
-            const categoryName = p.category_name || 'Không có';
-            tr.innerHTML = `
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-              <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-              <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-                  <i class="fas fa-edit"></i> Sửa
-                </button>
-                <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
-                  <i class="fas fa-trash"></i> Xóa
-                </button>
-              </td>
-            `;
-            tbody.appendChild(tr);
-          });
-        } else {
-          // Nếu không phải mảng hoặc rỗng, hiển thị empty state hoặc lỗi
-          emptyState.classList.remove('hidden');
-          if (!Array.isArray(data)) {
-            console.error('Products data is not an array:', data);
-            showMessage('Lỗi dữ liệu từ server: ' + (data.error || 'Dữ liệu không hợp lệ'), 'error');
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        showMessage('Lỗi mạng khi tải danh sách sản phẩm', 'error');
-      }
-    }
+         async function fetchList(q = '') {
+       let url = apiProducts;
+       if (q) url += '?q=' + encodeURIComponent(q);
+       console.log('Fetching from:', url);
+       try {
+         const res = await fetch(url);
+         console.log('Response status:', res.status, 'Status text:', res.statusText);
+         const responseText = await res.text();  // Lấy response dưới dạng text trước
+         console.log('Response body (full text):', responseText);  // Log toàn bộ nội dung response
+         if (!res.ok) {
+           showMessage('Lỗi server: ' + res.status + ' - ' + responseText.substring(0, 200), 'error');  // Log ngắn gọn
+           return;
+         }
+         // Chỉ parse JSON nếu status OK
+         const data = JSON.parse(responseText);
+         console.log('Parsed data:', data);
+         const tbody = document.getElementById('tbody');
+         const emptyState = document.getElementById('emptyState');
+         tbody.innerHTML = '';
+         if (Array.isArray(data) && data.length > 0) {
+           emptyState.classList.add('hidden');
+           data.forEach(p => {
+             const tr = document.createElement('tr');
+             tr.className = 'hover:bg-gray-50 transition-colors';
+             const priceNum = Number(p.unit_price || 0);
+             const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
+             const categoryName = p.category_name || 'Không có';
+             tr.innerHTML = `
+               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+               <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+               <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
+               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
+               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                 <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+                   <i class="fas fa-edit"></i> Sửa
+                 </button>
+                 <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+                   <i class="fas fa-trash"></i> Xóa
+                 </button>
+               </td>
+             `;
+             tbody.appendChild(tr);
+           });
+         } else {
+           emptyState.classList.remove('hidden');
+           if (!Array.isArray(data)) {
+             console.error('Data is not an array:', data);
+             showMessage('Lỗi dữ liệu: ' + (data.error || 'Dữ liệu không hợp lệ'), 'error');
+           }
+         }
+       } catch (error) {
+         console.error('Error fetching products:', error);
+         showMessage('Lỗi mạng khi tải danh sách sản phẩm: ' + error.message, 'error');
+       }
+     }
+     
 
     function showMessage(msg, type = 'success') {
       const box = document.getElementById('messageBox');
