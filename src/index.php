@@ -24,6 +24,7 @@
           <i class="fas fa-boxes text-3xl text-blue-600"></i>
           <h1 class="text-3xl font-bold text-gray-900">Quản lý vật tư</h1>
           <a href="categories.php" class="text-blue-600 hover:text-blue-900 font-medium">Quản lý Danh mục</a>
+          <a href="stats.php" class="text-blue-600 hover:text-blue-900 font-medium">Thống kê</a>
         </div>
         <div class="hidden md:block text-sm text-gray-500">
           Quản lý sản phẩm dễ dàng và hiệu quả
