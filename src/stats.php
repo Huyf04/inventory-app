@@ -13,7 +13,10 @@
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
   <div class="max-w-5xl mx-auto">
     <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Dashboard Thống kê kho vật tư</h1>
-
+     <div class="flex justify-end gap-2 mb-4">
+      <a href="./api/export_stats_csv.php" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Tải CSV</a>
+      <a href="./api/export_stats_pdf.php" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Tải PDF</a>
+    </div>
     <!-- Thông số nhanh -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
       <div class="bg-white shadow rounded-lg p-6 text-center">
