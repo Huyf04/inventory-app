@@ -1,16 +1,23 @@
 <?php
+// Không có dòng trống hay ký tự nào TRƯỚC <?php
+
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/vendor/autoload.php'; // ✅ Sửa lại đúng đường dẫn
+// Xóa toàn bộ output buffer trước khi tạo PDF
+if (ob_get_length()) {
+    ob_end_clean();
+}
+
+require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/../config.php';
 
 use Mpdf\Mpdf;
 
-header('Content-Type: application/pdf');
-header('Content-Disposition: attachment; filename="thongke_kho.pdf"');
-
 try {
+    // Tạo đối tượng mPDF
+    $mpdf = new Mpdf();
+
     // Lấy dữ liệu tổng hợp
     $statsQuery = $con->query("
         SELECT 
@@ -28,6 +35,7 @@ try {
         GROUP BY c.id
     ");
 
+    // Nội dung HTML
     $html = '
     <h2 style="text-align:center;">📊 Báo cáo thống kê kho vật tư</h2>
     <p><b>Ngày tạo:</b> ' . date('d/m/Y H:i') . '</p>
@@ -64,11 +72,13 @@ try {
 
     $html .= '</table><br><br><i>Hệ thống thống kê kho vật tư</i>';
 
-    // Tạo PDF
-    $mpdf = new Mpdf();
+    // Ghi nội dung ra PDF
     $mpdf->WriteHTML($html);
-    $mpdf->Output();
+
+    // Gửi về trình duyệt
+    $mpdf->Output('thongke_kho.pdf', 'I'); // 'I' = inline view, 'D' = download
+
 } catch (Exception $e) {
+    header('Content-Type: text/plain; charset=utf-8');
     echo 'Lỗi khi xuất PDF: ' . $e->getMessage();
 }
-?>
