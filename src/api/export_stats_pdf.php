@@ -9,7 +9,7 @@ if (!file_exists(__DIR__ . '/../../vendor/autoload.php')) {
   exit;
 }
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../inventory-app/vendor/autoload.php';
 
 require_once __DIR__ . '/../config.php';
 
