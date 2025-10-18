@@ -2,7 +2,15 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
+echo '__DIR__: ' . __DIR__ . "<br>";
+echo 'Checking file: ' . realpath(__DIR__ . '/../../vendor/autoload.php') . "<br>";
+if (!file_exists(__DIR__ . '/../../vendor/autoload.php')) {
+  echo "File vendor/autoload.php not found!";
+  exit;
+}
+
 require_once __DIR__ . '/../../vendor/autoload.php';
+
 require_once __DIR__ . '/../config.php';
 
 use Mpdf\Mpdf;
