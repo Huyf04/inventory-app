@@ -155,8 +155,9 @@
     </div>
   </div>
   <script>
-    const apiProducts = '/api/products.php';
-    const apiCategories = '/api/categories.php';
+    // Sửa đường dẫn API thành tương đối (từ src/index.php đến src/api/)
+    const apiProducts = './api/products.php';
+    const apiCategories = './api/categories.php';
 
     function formatCurrency(input) {
       let value = input.value.replace(/[^\d]/g, '');
@@ -169,57 +170,89 @@
     }
 
     async function fetchCategories() {
-      const res = await fetch(apiCategories);
-      const categories = await res.json();
-      const select = document.getElementById('category_id');
-      select.innerHTML = '<option value="">Chọn danh mục</option>';
-      if (Array.isArray(categories)) {
-        categories.forEach(cat => {
-          const option = document.createElement('option');
-          option.value = cat.id;
-          option.textContent = cat.name;
-          select.appendChild(option);
-        });
+      try {
+        console.log('Fetching categories from:', apiCategories);  // Debug log
+        const res = await fetch(apiCategories);
+        console.log('Categories response status:', res.status);  // Debug log
+        if (!res.ok) {
+          console.error('Failed to fetch categories:', res.statusText);
+          return;
+        }
+        const categories = await res.json();
+        console.log('Categories data:', categories);  // Debug log
+        const select = document.getElementById('category_id');
+        select.innerHTML = '<option value="">Chọn danh mục</option>';
+        if (Array.isArray(categories)) {
+          categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.id;
+            option.textContent = cat.name;
+            select.appendChild(option);
+          });
+        } else {
+          console.error('Categories data is not an array:', categories);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
       }
     }
 
     async function fetchList(q = '') {
-      let url = apiProducts;
-      if (q) url += '?q=' + encodeURIComponent(q);
-      const res = await fetch(url);
-      const data = await res.json();
-      const tbody = document.getElementById('tbody');
-      const emptyState = document.getElementById('emptyState');
-      tbody.innerHTML = '';
-      if (!Array.isArray(data) || data.length === 0) {
-        emptyState.classList.remove('hidden');
-        return;
+      try {
+        let url = apiProducts;
+        if (q) url += '?q=' + encodeURIComponent(q);
+        console.log('Fetching products from:', url);  // Debug log
+        const res = await fetch(url);
+        console.log('Products response status:', res.status);  // Debug log
+        if (!res.ok) {
+          console.error('Failed to fetch products:', res.statusText);
+          showMessage('Lỗi khi tải danh sách sản phẩm: ' + res.statusText, 'error');
+          return;
+        }
+        const data = await res.json();
+        console.log('Products data received:', data);  // Debug log
+        const tbody = document.getElementById('tbody');
+        const emptyState = document.getElementById('emptyState');
+        tbody.innerHTML = '';
+        // Kiểm tra nếu data là mảng và có dữ liệu
+        if (Array.isArray(data) && data.length > 0) {
+          emptyState.classList.add('hidden');
+          data.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition-colors';
+            const priceNum = Number(p.unit_price || 0);
+            const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
+            const categoryName = p.category_name || 'Không có';
+            tr.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+              <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+              <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+                  <i class="fas fa-edit"></i> Sửa
+                </button>
+                <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+                  <i class="fas fa-trash"></i> Xóa
+                </button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          // Nếu không phải mảng hoặc rỗng, hiển thị empty state hoặc lỗi
+          emptyState.classList.remove('hidden');
+          if (!Array.isArray(data)) {
+            console.error('Products data is not an array:', data);
+            showMessage('Lỗi dữ liệu từ server: ' + (data.error || 'Dữ liệu không hợp lệ'), 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        showMessage('Lỗi mạng khi tải danh sách sản phẩm', 'error');
       }
-      emptyState.classList.add('hidden');
-      data.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50 transition-colors';
-        const priceNum = Number(p.unit_price || 0);
-        const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
-        const categoryName = p.category_name || 'Không có';
-        tr.innerHTML = `
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-          <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-          <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-              <i class="fas fa-edit"></i> Sửa
-            </button>
-            <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
-              <i class="fas fa-trash"></i> Xóa
-            </button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
     }
 
     function showMessage(msg, type = 'success') {
@@ -238,82 +271,110 @@
 
     async function del(id) {
       if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
-      const res = await fetch(apiProducts + '?id=' + id, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (res.ok && data.success) showMessage('Xóa sản phẩm thành công', 'success');
-      else showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
-      fetchList();
-    }
-
+      try {
+        const res = await fetch(apiProducts + '?id=' + id, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+  showMessage('Xóa sản phẩm thành công', 'success');
+} else {
+  showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
+}
+fetchList();
+}catch (error) {
+    console.error('Error editing product:', error);
+    showMessage('Lỗi mạng khi tải sản phẩm', 'error');
+  }}
+    
     async function edit(id) {
-      const res = await fetch(apiProducts + '?id=' + id);
-      const p = await res.json();
-      document.getElementById('id').value = p.id;
-      document.getElementById('sku').value = p.sku || '';
-      document.getElementById('name').value = p.name || '';
-      document.getElementById('quantity').value = p.quantity || '';
-      document.getElementById('unit_price').value = p.unit_price ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫' : '';
-      document.getElementById('description').value = p.description || '';
-      document.getElementById('category_id').value = p.category_id || '';
-      document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
+  try {
+    const res = await fetch(apiProducts + '?id=' + id);
+    if (!res.ok) {
+      showMessage('Lỗi khi tải sản phẩm để sửa', 'error');
+      return;
     }
+    const p = await res.json();
+    document.getElementById('id').value = p.id;
+    document.getElementById('sku').value = p.sku || '';
+    document.getElementById('name').value = p.name || '';
+    document.getElementById('quantity').value = p.quantity || '';
+    document.getElementById('unit_price').value = p.unit_price ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫' : '';
+    document.getElementById('description').value = p.description || '';
+    document.getElementById('category_id').value = p.category_id || '';
+    document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
+  } catch (error) {
+    console.error('Error editing product:', error);
+    showMessage('Lỗi mạng khi tải sản phẩm', 'error');
+  }
+}
 
-    document.getElementById('productForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = document.getElementById('id').value;
-      const unitPriceInput = document.getElementById('unit_price');
-      const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
-      const unit_price = parseFloat(cleanValue || 0);
-      const category_id = document.getElementById('category_id').value;
-      const payload = {
-        sku: document.getElementById('sku').value,
-        name: document.getElementById('name').value,
-        quantity: parseInt(document.getElementById('quantity').value || 0),
-        unit_price,
-        description: document.getElementById('description').value,
-        category_id
-      };
-      let res = id ? await fetch(apiProducts + '?id=' + id, {
+document.getElementById('productForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('id').value;
+  const unitPriceInput = document.getElementById('unit_price');
+  const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
+  const unit_price = parseFloat(cleanValue || 0);
+  const category_id = document.getElementById('category_id').value;
+  const payload = {
+    sku: document.getElementById('sku').value,
+    name: document.getElementById('name').value,
+    quantity: parseInt(document.getElementById('quantity').value || 0),
+    unit_price,
+    description: document.getElementById('description').value,
+    category_id
+  };
+  try {
+    let res;
+    if (id) {
+      res = await fetch(apiProducts + '?id=' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }) : await fetch(apiProducts, {
+      });
+    } else {
+      res = await fetch(apiProducts, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
-        document.getElementById('productForm').reset();
-        document.getElementById('id').value = '';
-        document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
-      } else showMessage('Lỗi: ' + (data.error || ''), 'error');
-      fetchList();
-    });
-
-    document.getElementById('btnSearch').addEventListener('click', () => {
-      const q = document.getElementById('q').value.trim();
-      fetchList(q);
-    });
-
-    document.getElementById('btnRefresh').addEventListener('click', () => {
-      document.getElementById('q').value = '';
-      fetchList();
-    });
-
-    document.getElementById('btnReset').addEventListener('click', () => {
+    }
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
       document.getElementById('productForm').reset();
       document.getElementById('id').value = '';
       document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
-    });
+      fetchList();  // Refresh danh sách sau khi thêm/sửa
+    } else {
+      showMessage('Lỗi: ' + (data.error || ''), 'error');
+    }
+  } catch (error) {
+    console.error('Error submitting form:', error);
+    showMessage('Lỗi mạng khi lưu sản phẩm', 'error');
+  }
+});
 
-    document.addEventListener('DOMContentLoaded', () => {
-      fetchCategories();
-      fetchList();
-    });
+document.getElementById('btnSearch').addEventListener('click', () => {
+  const q = document.getElementById('q').value.trim();
+  fetchList(q);
+});
+
+document.getElementById('btnRefresh').addEventListener('click', () => {
+  document.getElementById('q').value = '';
+  fetchList();
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  document.getElementById('productForm').reset();
+  document.getElementById('id').value = '';
+  document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  fetchCategories();
+  fetchList();
+});
   </script>
 </body>
 </html>
