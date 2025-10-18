@@ -1,49 +1,53 @@
 <?php
-// src/api/export_stats_pdf.php
+require_once '../config.php';
+require_once '../vendor/autoload.php';
 
-ini_set('display_errors', 0);
-require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/../../vendor/autoload.php';  // nếu dùng composer
+use Mpdf\Mpdf;
 
-use Dompdf\Dompdf;
+header('Content-Type: application/pdf');
+header('Content-Disposition: attachment; filename="thong_ke_kho.pdf"');
 
-// Lấy dữ liệu
-$res1 = pg_query($pg, "SELECT COUNT(*) AS cnt FROM products");
-$row1 = pg_fetch_assoc($res1);
-$totalProducts = intval($row1['cnt']);
+// Lấy dữ liệu thống kê
+$totalProducts = 0;
+$lowStockCount = 0;
+$totalCategories = 0;
 
-$res2 = pg_query($pg, "SELECT COUNT(*) AS cnt FROM products WHERE quantity <= 10");
-$row2 = pg_fetch_assoc($res2);
-$lowStockCount = intval($row2['cnt']);
+$result = $con->query("SELECT COUNT(*) AS total FROM products");
+if ($row = $result->fetch_assoc()) {
+  $totalProducts = $row['total'];
+}
 
-$res3 = pg_query($pg, "SELECT COUNT(*) AS cnt FROM categories");
-$row3 = pg_fetch_assoc($res3);
-$totalCategories = intval($row3['cnt']);
+$result = $con->query("SELECT COUNT(*) AS total FROM products WHERE quantity < 5");
+if ($row = $result->fetch_assoc()) {
+  $lowStockCount = $row['total'];
+}
 
-// Tạo HTML
+$result = $con->query("SELECT COUNT(*) AS total FROM categories");
+if ($row = $result->fetch_assoc()) {
+  $totalCategories = $row['total'];
+}
+
+// Tạo nội dung PDF
 $html = '
-<html>
-<head><meta charset="UTF-8"><style>
-  body { font-family: DejaVu Sans, sans-serif; }
-  table { width:100%; border-collapse: collapse; }
-  th, td { border:1px solid #000; padding:8px; text-align:left; }
-  th { background-color:#eee; }
-</style></head>
-<body>
-  <h2>Báo cáo thống kê kho vật tư</h2>
-  <table>
-    <tr><th>Chỉ số</th><th>Giá trị</th></tr>
-    <tr><td>Tổng số sản phẩm</td><td>'.$totalProducts.'</td></tr>
-    <tr><td>Sản phẩm tồn kho thấp (≤10)</td><td>'.$lowStockCount.'</td></tr>
-    <tr><td>Tổng số danh mục</td><td>'.$totalCategories.'</td></tr>
-  </table>
-</body>
-</html>
+<h1 style="text-align:center;">BÁO CÁO THỐNG KÊ KHO VẬT TƯ</h1>
+<p><strong>Ngày tạo:</strong> ' . date('d/m/Y H:i') . '</p>
+<hr>
+<table border="1" cellspacing="0" cellpadding="8" width="100%">
+  <tr style="background-color:#f0f0f0;">
+    <th>Chỉ số</th>
+    <th>Giá trị</th>
+  </tr>
+  <tr><td>Tổng số sản phẩm</td><td>' . $totalProducts . '</td></tr>
+  <tr><td>Sản phẩm tồn kho thấp (&lt;5)</td><td>' . $lowStockCount . '</td></tr>
+  <tr><td>Tổng số danh mục</td><td>' . $totalCategories . '</td></tr>
+</table>
+<br><p style="text-align:center;">--- Hết báo cáo ---</p>
 ';
 
-$dompdf = new Dompdf();
-$dompdf->loadHtml($html);
-$dompdf->setPaper('A4', 'portrait');
-$dompdf->render();
-$dompdf->stream('report_stats_'.date('Y-m-d').'.pdf', ["Attachment" => true]);
-exit;
+try {
+    $mpdf = new Mpdf();
+    $mpdf->WriteHTML($html);
+    $mpdf->Output();
+} catch (Exception $e) {
+    echo 'Lỗi khi tạo PDF: ' . $e->getMessage();
+}
