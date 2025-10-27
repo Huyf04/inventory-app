@@ -93,10 +93,8 @@ if ($method === 'POST') {
         @pg_query_params($pg2, $query, $params);
     }
     if ($SYNC_TO_DB3 && $pg3) {
-    $query_no_return = "INSERT INTO products (sku, name, description, quantity, unit_price, category_id)
-                        VALUES ($1, $2, $3, $4, $5, $6)";
-    @pg_query_params($pg3, $query_no_return, $params);
-}
+        @pg_query_params($pg3, $query, $params);
+    }
 
     jsonResponse(["success" => true, "id" => $insertedId], 201);
 }
