@@ -93,15 +93,8 @@ if ($method === 'POST') {
         @pg_query_params($pg2, $query, $params);
     }
     if ($SYNC_TO_DB3 && $pg3) {
-    $ok3 = @pg_query_params($pg3, $query, $params);
-    if (!$ok3) {
-        $err = pg_last_error($pg3);
-        error_log("❌ Supabase INSERT failed: " . $err);
-        file_put_contents(__DIR__ . '/../supabase_error.log', date('c') . " - " . $err . "\n", FILE_APPEND);
-    } else {
-        error_log("✅ Supabase INSERT success");
+        @pg_query_params($pg3, $query, $params);
     }
-}
 
     jsonResponse(["success" => true, "id" => $insertedId], 201);
 }
