@@ -53,10 +53,6 @@ function getDBConnection($which = 1) {
     if ($which == 2) return $pg2;
     return $pg1;
 }
-if ($pg3) {
-    echo "✅ Supabase connected successfully";
-} else {
-    echo "❌ Supabase connection failed";
-}
+
 
 ?>
