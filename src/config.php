@@ -1,7 +1,6 @@
 <?php
-// -------------------
-// Kết nối DB1 - Render (Singapore)
-// -------------------
+// src/config.php
+
 $pg1 = pg_connect(sprintf(
     "host=%s port=%s dbname=%s user=%s password=%s",
     getenv("DB_HOST"),
@@ -11,9 +10,6 @@ $pg1 = pg_connect(sprintf(
     getenv("DB_PASS")
 ));
 
-// -------------------
-// Kết nối DB2 - Neon (Tokyo hoặc Mỹ)
-// -------------------
 $pg2 = pg_connect(sprintf(
     "host=%s port=%s dbname=%s user=%s password=%s",
     getenv("DB2_HOST"),
@@ -23,17 +19,22 @@ $pg2 = pg_connect(sprintf(
     getenv("DB2_PASS")
 ));
 
-// Kiểm tra kết nối
-if (!$pg1) {
-    die("❌ Kết nối Render DB thất bại: " . pg_last_error());
-}
-if (!$pg2) {
-    echo "⚠️ Cảnh báo: Không kết nối được Neon DB (DB2)\n";
-}
+// ✅ Thêm DB3 - Supabase (ở Mỹ)
+$pg3 = pg_connect(sprintf(
+    "host=%s port=%s dbname=%s user=%s password=%s",
+    getenv("DB3_HOST"),
+    getenv("DB3_PORT") ?: 5432,
+    getenv("DB3_NAME"),
+    getenv("DB3_USER"),
+    getenv("DB3_PASS")
+));
 
-// Hàm chọn kết nối theo vùng hoặc mục đích
+if (!$pg1) die("❌ Không thể kết nối Render DB");
+if (!$pg2) echo "⚠️ Không kết nối được Neon DB\n";
+if (!$pg3) echo "⚠️ Không kết nối được Supabase DB\n";
+
 function getDBConnection($which = 1) {
-    global $pg1, $pg2;
-    return $which == 2 ? $pg2 : $pg1;
+    global $pg1, $pg2, $pg3;
+    return $which == 3 ? $pg3 : ($which == 2 ? $pg2 : $pg1);
 }
 ?>

@@ -21,11 +21,15 @@ function jsonResponse($data, $code = 200) {
 }
 
 // ====== KẾT NỐI DB ======
-$pg = getDBConnection(1);   // DB1: Render
-$pg2 = getDBConnection(2);  // DB2: Neon
-$SYNC_TO_DB2 = true;        // Ghi đồng bộ sang DB2 nếu có
+$pg1 = getDBConnection(1); // Render 🇸🇬
+$pg2 = getDBConnection(2); // Neon 🇯🇵
+$pg3 = getDBConnection(3); // Supabase 🇺🇸
 
-if (!$pg) jsonResponse(["error" => "Không thể kết nối DB chính"], 500);
+// Bật đồng bộ
+$SYNC_TO_DB2 = true;
+$SYNC_TO_DB3 = true;
+
+if (!$pg1) jsonResponse(["error" => "Không thể kết nối DB chính"], 500);
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) $input = [];
@@ -36,8 +40,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     if (isset($_GET['id'])) {
         $id = intval($_GET['id']);
-        $res = pg_query_params($pg, "SELECT * FROM categories WHERE id = $1", [$id]);
-        if (!$res) jsonResponse(["error" => pg_last_error($pg)], 500);
+        $res = pg_query_params($pg1, "SELECT * FROM categories WHERE id = $1", [$id]);
+        if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
         $row = pg_fetch_assoc($res);
         jsonResponse($row ?: [], 200);
     }
@@ -45,11 +49,11 @@ if ($method === 'GET') {
     $limit = intval($_GET['limit'] ?? 50);
     $offset = intval($_GET['offset'] ?? 0);
     $res = pg_query_params(
-        $pg,
+        $pg1,
         "SELECT * FROM categories ORDER BY id DESC LIMIT $1 OFFSET $2",
         [$limit, $offset]
     );
-    if (!$res) jsonResponse(["error" => pg_last_error($pg)], 500);
+    if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
     $rows = pg_fetch_all($res) ?: [];
     jsonResponse($rows, 200);
 }
@@ -64,14 +68,14 @@ if ($method === 'POST') {
     $query = "INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id";
     $params = [$name, $description];
 
-    $res = pg_query_params($pg, $query, $params);
-    if (!$res) jsonResponse(["error" => pg_last_error($pg)], 500);
+    $res = pg_query_params($pg1, $query, $params);
+    if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
     $row = pg_fetch_assoc($res);
     $insertedId = $row['id'];
 
-    if ($SYNC_TO_DB2 && $pg2) {
-        @pg_query_params($pg2, $query, $params);
-    }
+    // Đồng bộ sang DB2, DB3
+    if ($SYNC_TO_DB2 && $pg2) @pg_query_params($pg2, $query, $params);
+    if ($SYNC_TO_DB3 && $pg3) @pg_query_params($pg3, $query, $params);
 
     jsonResponse(["success" => true, "id" => $insertedId], 201);
 }
@@ -88,12 +92,11 @@ if ($method === 'PUT') {
     $query = "UPDATE categories SET name = $1, description = $2 WHERE id = $3";
     $params = [$name, $description, $id];
 
-    $res = pg_query_params($pg, $query, $params);
-    if (!$res) jsonResponse(["error" => pg_last_error($pg)], 500);
+    $res = pg_query_params($pg1, $query, $params);
+    if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
 
-    if ($SYNC_TO_DB2 && $pg2) {
-        @pg_query_params($pg2, $query, $params);
-    }
+    if ($SYNC_TO_DB2 && $pg2) @pg_query_params($pg2, $query, $params);
+    if ($SYNC_TO_DB3 && $pg3) @pg_query_params($pg3, $query, $params);
 
     jsonResponse(["success" => true], 200);
 }
@@ -103,12 +106,11 @@ if ($method === 'DELETE') {
     if (!isset($_GET['id'])) jsonResponse(["error" => "Thiếu id"], 400);
     $id = intval($_GET['id']);
 
-    $res = pg_query_params($pg, "DELETE FROM categories WHERE id = $1", [$id]);
-    if (!$res) jsonResponse(["error" => pg_last_error($pg)], 500);
+    $res = pg_query_params($pg1, "DELETE FROM categories WHERE id = $1", [$id]);
+    if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
 
-    if ($SYNC_TO_DB2 && $pg2) {
-        @pg_query_params($pg2, "DELETE FROM categories WHERE id = $1", [$id]);
-    }
+    if ($SYNC_TO_DB2 && $pg2) @pg_query_params($pg2, "DELETE FROM categories WHERE id = $1", [$id]);
+    if ($SYNC_TO_DB3 && $pg3) @pg_query_params($pg3, "DELETE FROM categories WHERE id = $1", [$id]);
 
     jsonResponse(["success" => true], 200);
 }
