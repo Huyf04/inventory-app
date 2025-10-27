@@ -93,8 +93,11 @@ if ($method === 'POST') {
         @pg_query_params($pg2, $query, $params);
     }
     if ($SYNC_TO_DB3 && $pg3) {
-        @pg_query_params($pg3, $query, $params);
+    $r3 = pg_query_params($pg3, $query, $params);
+    if (!$r3) {
+        error_log("⚠️ Lỗi khi thêm DB3: " . pg_last_error($pg3));
     }
+}
 
     jsonResponse(["success" => true, "id" => $insertedId], 201);
 }
