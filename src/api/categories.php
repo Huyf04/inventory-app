@@ -23,11 +23,9 @@ function jsonResponse($data, $code = 200) {
 // ====== KẾT NỐI DB ======
 $pg1 = getDBConnection(1); // Render 🇸🇬
 $pg2 = getDBConnection(2); // Neon 🇯🇵
-$pg3 = getDBConnection(3); // Supabase 🇺🇸
 
 // Bật đồng bộ
 $SYNC_TO_DB2 = true;
-$SYNC_TO_DB3 = true;
 
 if (!$pg1) jsonResponse(["error" => "Không thể kết nối DB chính"], 500);
 
@@ -73,9 +71,8 @@ if ($method === 'POST') {
     $row = pg_fetch_assoc($res);
     $insertedId = $row['id'];
 
-    // Đồng bộ sang DB2, DB3
+    // Đồng bộ sang DB2
     if ($SYNC_TO_DB2 && $pg2) @pg_query_params($pg2, $query, $params);
-    if ($SYNC_TO_DB3 && $pg3) @pg_query_params($pg3, $query, $params);
 
     jsonResponse(["success" => true, "id" => $insertedId], 201);
 }
@@ -96,7 +93,6 @@ if ($method === 'PUT') {
     if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
 
     if ($SYNC_TO_DB2 && $pg2) @pg_query_params($pg2, $query, $params);
-    if ($SYNC_TO_DB3 && $pg3) @pg_query_params($pg3, $query, $params);
 
     jsonResponse(["success" => true], 200);
 }
@@ -110,7 +106,6 @@ if ($method === 'DELETE') {
     if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
 
     if ($SYNC_TO_DB2 && $pg2) @pg_query_params($pg2, "DELETE FROM categories WHERE id = $1", [$id]);
-    if ($SYNC_TO_DB3 && $pg3) @pg_query_params($pg3, "DELETE FROM categories WHERE id = $1", [$id]);
 
     jsonResponse(["success" => true], 200);
 }
