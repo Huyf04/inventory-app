@@ -25,7 +25,7 @@ $pg1 = getDBConnection(1); // Render 🇸🇬
 $pg2 = getDBConnection(2); // Neon 🇯🇵
 
 // Bật đồng bộ
-$SYNC_TO_DB2 = true;
+$SYNC_TO_DB2 = false;
 
 if (!$pg1) jsonResponse(["error" => "Không thể kết nối DB chính"], 500);
 

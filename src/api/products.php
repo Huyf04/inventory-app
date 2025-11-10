@@ -25,7 +25,7 @@ function jsonResponse($data, $code = 200) {
 $pg1 = getDBConnection(1); // Render
 $pg2 = getDBConnection(2); // Neon
 
-$SYNC_TO_DB2 = true;
+$SYNC_TO_DB2 = false;
 
 if (!$pg1) jsonResponse(["error" => "❌ Không thể kết nối Render DB"], 500);
 
