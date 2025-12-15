@@ -1,6 +1,9 @@
 <?php
 // src/api/categories.php
 
+ini_set('display_errors', 0);
+error_reporting(0);
+
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config.php';
 
@@ -104,6 +107,7 @@ if ($method === 'PUT') {
 
     if ($name === '') jsonResponse(["error" => "Tên danh mục không được để trống"], 400);
 
+    // Nếu bảng categories không có cột updated_at, xóa ", updated_at = NOW()"
     $query = "UPDATE categories SET name = $1, description = $2, updated_at = NOW() WHERE id = $3";
     $params = [$name, $description, $id];
 
@@ -151,4 +155,3 @@ if ($method === 'DELETE') {
 
 // ====== DEFAULT ======
 jsonResponse(["error" => "Method không được hỗ trợ"], 405);
-?>
