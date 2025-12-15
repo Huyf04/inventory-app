@@ -22,12 +22,12 @@ function jsonResponse($data, $code = 200) {
 }
 
 function debugLog($msg) {
-    error_log("[PRODUCTS_API] " . $msg);
+    error_log('[PRODUCT_API] ' . $msg);
 }
 
 /* ===== DB CONNECTION ===== */
-$pg1 = getDBConnection(1); // DB chính (Render)
-$pg2 = getDBConnection(2); // DB phụ (Neon sync)
+$pg1 = getDBConnection(1); // DB chính
+$pg2 = getDBConnection(2); // DB sync (Neon)
 
 $SYNC_TO_DB2 = true;
 
@@ -36,9 +36,9 @@ if (!$pg1) {
 }
 
 /* ===== INPUT ===== */
-$method = $_SERVER['REQUEST_METHOD'];
+$method   = $_SERVER['REQUEST_METHOD'];
 $rawInput = file_get_contents('php://input');
-$input = json_decode($rawInput, true);
+$input    = json_decode($rawInput, true);
 if (!is_array($input)) $input = [];
 
 /* ======================================================
@@ -60,10 +60,7 @@ if ($method === 'GET') {
             [$sku]
         );
 
-        if (!$res) {
-            jsonResponse(["error" => pg_last_error($pg1)], 500);
-        }
-
+        if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
         jsonResponse(pg_fetch_assoc($res) ?: [], 200);
     }
 
@@ -77,10 +74,7 @@ if ($method === 'GET') {
         [$limit, $offset]
     );
 
-    if (!$res) {
-        jsonResponse(["error" => pg_last_error($pg1)], 500);
-    }
-
+    if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
     jsonResponse(pg_fetch_all($res) ?: [], 200);
 }
 
@@ -118,7 +112,7 @@ if ($method === 'POST') {
 
     $insertedId = pg_fetch_assoc($res)['id'];
 
-    /* ===== SYNC DB2 (UPSERT by SKU) ===== */
+    /* ===== SYNC DB2 (UPSERT BY SKU) ===== */
     if ($SYNC_TO_DB2 && $pg2) {
         $querySync = "
             INSERT INTO products (sku, name, description, quantity, unit_price, category_id)
@@ -132,8 +126,8 @@ if ($method === 'POST') {
                 updated_at = NOW()
         ";
 
-        if (!@pg_query_params($pg2, $querySync, $params)) {
-            debugLog("⚠️ Sync DB2 failed: " . pg_last_error($pg2));
+        if (!pg_query_params($pg2, $querySync, $params)) {
+            debugLog("⚠️ DB2 sync failed: " . pg_last_error($pg2));
         }
     }
 
@@ -156,9 +150,7 @@ if ($method === 'PUT') {
     $price       = floatval($input['unit_price'] ?? 0);
     $category_id = intval($input['category_id'] ?? 0);
 
-    if ($sku === '') {
-        jsonResponse(["error" => "Thiếu SKU"], 400);
-    }
+    if ($sku === '') jsonResponse(["error" => "Thiếu SKU"], 400);
 
     $query = "
         UPDATE products SET
@@ -178,8 +170,8 @@ if ($method === 'PUT') {
     }
 
     if ($SYNC_TO_DB2 && $pg2) {
-        if (!@pg_query_params($pg2, $query, $params)) {
-            debugLog("⚠️ Sync DB2 PUT failed: " . pg_last_error($pg2));
+        if (!pg_query_params($pg2, $query, $params)) {
+            debugLog("⚠️ DB2 PUT sync failed: " . pg_last_error($pg2));
         }
     }
 
@@ -192,12 +184,9 @@ if ($method === 'PUT') {
 if ($method === 'DELETE') {
 
     $sku = trim($_GET['sku'] ?? '');
+    if ($sku === '') jsonResponse(["error" => "Thiếu SKU"], 400);
 
-    if ($sku === '') {
-        jsonResponse(["error" => "Thiếu SKU"], 400);
-    }
-
-    $query = "DELETE FROM products WHERE sku = $1";
+    $query  = "DELETE FROM products WHERE sku = $1";
     $params = [$sku];
 
     if (!pg_query_params($pg1, $query, $params)) {
@@ -205,8 +194,8 @@ if ($method === 'DELETE') {
     }
 
     if ($SYNC_TO_DB2 && $pg2) {
-        if (!@pg_query_params($pg2, $query, $params)) {
-            debugLog("⚠️ Sync DB2 DELETE failed: " . pg_last_error($pg2));
+        if (!pg_query_params($pg2, $query, $params)) {
+            debugLog("⚠️ DB2 DELETE sync failed: " . pg_last_error($pg2));
         }
     }
 
