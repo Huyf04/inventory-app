@@ -1,15 +1,10 @@
 <?php
-/* =====================================================
-   PRODUCTS API - SKU BASED + SYNC 2 DB (FIX PK ERROR)
-   ===================================================== */
+// src/api/products.php
 
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
-ob_start();
-
-/* ===== HEADER ===== */
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../config.php';
+
+// Cho phép CORS (dev mode)
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -19,168 +14,140 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-require_once __DIR__ . '/../config.php';
-
-/* ===== HELPER ===== */
+// ====== HÀM HỖ TRỢ ======
 function jsonResponse($data, $code = 200) {
     http_response_code($code);
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     exit;
 }
 
+// ====== KẾT NỐI CÁC DB ======
+$pg1 = getDBConnection(1); // Render
+$pg2 = getDBConnection(2); // Neon
+
+$SYNC_TO_DB2 = true;
+
+if (!$pg1) jsonResponse(["error" => "❌ Không thể kết nối Render DB"], 500);
+
+$inputRaw = file_get_contents('php://input');
+$input = json_decode($inputRaw, true);
+if (!is_array($input)) $input = [];
+$method = $_SERVER['REQUEST_METHOD'];
+
+// ====== LOG DEBUG ======
 function debugLog($msg) {
-    error_log('[PRODUCT_API] ' . $msg);
+    error_log("[DEBUG] " . $msg);
 }
 
-/* ===== DB CONNECTION ===== */
-$pg1 = getDBConnection(1); // DB chính (Render)
-$pg2 = getDBConnection(2); // DB sync (Neon)
-
-if (!$pg1) jsonResponse(["error" => "Không thể kết nối DB1"], 500);
-if (!$pg2) debugLog("⚠️ DB2 connection FAILED");
-
-/* ===== INPUT ===== */
-$method = $_SERVER['REQUEST_METHOD'];
-$input  = json_decode(file_get_contents('php://input'), true) ?? [];
-
-/* =====================================================
-   ======================= GET =========================
-   ===================================================== */
+// ====== GET ======
 if ($method === 'GET') {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : null;
+    $limit = intval($_GET['limit'] ?? 50);
+    $offset = intval($_GET['offset'] ?? 0);
 
-    if (isset($_GET['sku'])) {
+    if ($id) {
         $res = pg_query_params(
             $pg1,
-            "SELECT p.*, c.name AS category_name
-             FROM products p
-             LEFT JOIN categories c ON p.category_id = c.id
-             WHERE p.sku = $1
-             LIMIT 1",
-            [$_GET['sku']]
+            "SELECT p.*, c.name as category_name 
+             FROM products p 
+             LEFT JOIN categories c ON p.category_id = c.id 
+             WHERE p.id = $1",
+            [$id]
         );
-        jsonResponse(pg_fetch_assoc($res) ?: []);
+        if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
+        jsonResponse(pg_fetch_assoc($res) ?: [], 200);
     }
 
-    $res = pg_query(
+    $res = pg_query_params(
         $pg1,
-        "SELECT p.*, c.name AS category_name
-         FROM products p
-         LEFT JOIN categories c ON p.category_id = c.id
-         ORDER BY p.id DESC"
+        "SELECT p.*, c.name as category_name 
+         FROM products p 
+         LEFT JOIN categories c ON p.category_id = c.id 
+         ORDER BY p.id DESC LIMIT $1 OFFSET $2",
+        [$limit, $offset]
     );
-    jsonResponse(pg_fetch_all($res) ?: []);
+    if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
+    jsonResponse(pg_fetch_all($res) ?: [], 200);
 }
 
-/* =====================================================
-   ======================= POST ========================
-   ===================================================== */
+// ====== POST ======
 if ($method === 'POST') {
+    debugLog("Raw POST input: " . $inputRaw);
 
-    $sku  = trim($input['sku'] ?? '');
+    $sku = trim($input['sku'] ?? '');
     $name = trim($input['name'] ?? '');
+    $desc = trim($input['description'] ?? '');
+    $qty = intval($input['quantity'] ?? 0);
+    $price = floatval($input['unit_price'] ?? 0.0);
+    $category_id = intval($input['category_id'] ?? 0);
 
-    if ($sku === '' || $name === '') {
-        jsonResponse(["error" => "SKU và tên sản phẩm không được để trống"], 400);
-    }
+    if ($name === '') jsonResponse(["error" => "Tên sản phẩm không được để trống"], 400);
 
-    $params = [
-        $sku,
-        $name,
-        $input['description'] ?? '',
-        (int)($input['quantity'] ?? 0),
-        (float)($input['unit_price'] ?? 0),
-        (int)($input['category_id'] ?? 0)
-    ];
+    $query = "INSERT INTO products (sku, name, description, quantity, unit_price, category_id) 
+              VALUES ($1, $2, $3, $4, $5, $6) RETURNING id";
+    $params = [$sku, $name, $desc, $qty, $price, $category_id];
 
-    /* ===== DB1 UPSERT ===== */
-    $q1 = "
-        INSERT INTO products (sku, name, description, quantity, unit_price, category_id)
-        VALUES ($1,$2,$3,$4,$5,$6)
-        ON CONFLICT (sku) DO UPDATE SET
-            name = EXCLUDED.name,
-            description = EXCLUDED.description,
-            quantity = EXCLUDED.quantity,
-            unit_price = EXCLUDED.unit_price,
-            category_id = EXCLUDED.category_id,
-            updated_at = NOW()
-    ";
-    if (!pg_query_params($pg1, $q1, $params)) {
+    debugLog("Query DB1: $query with params: " . json_encode($params));
+
+    $res = pg_query_params($pg1, $query, $params);
+    if (!$res) {
+        debugLog("DB1 Error: " . pg_last_error($pg1));
         jsonResponse(["error" => pg_last_error($pg1)], 500);
     }
 
-    /* ===== DB2 INSERT (NO ID GENERATED) ===== */
-    $q2_insert = "
-        INSERT INTO products (sku, name, description, quantity, unit_price, category_id)
-        SELECT $1,$2,$3,$4,$5,$6
-        WHERE NOT EXISTS (
-            SELECT 1 FROM products WHERE sku = $1
-        )
-    ";
-    pg_query_params($pg2, $q2_insert, $params);
+    $row = pg_fetch_assoc($res);
+    $insertedId = $row['id'];
 
-    /* ===== DB2 UPDATE ===== */
-    $q2_update = "
-        UPDATE products SET
-            name = $2,
-            description = $3,
-            quantity = $4,
-            unit_price = $5,
-            category_id = $6,
-            updated_at = NOW()
-        WHERE sku = $1
-    ";
-    pg_query_params($pg2, $q2_update, $params);
+    // 🔁 Đồng bộ sang DB2 nhưng không block nếu fail
+    if ($SYNC_TO_DB2 && $pg2) {
+        $res2 = @pg_query_params($pg2, $query, $params);
+        if (!$res2) {
+            debugLog("⚠️ Đồng bộ DB2 thất bại: " . pg_last_error($pg2));
+        } else {
+            debugLog("Đồng bộ DB2 thành công: ID " . $insertedId);
+        }
+    }
 
-    jsonResponse(["success" => true, "sku" => $sku], 201);
+    jsonResponse(["success" => true, "id" => $insertedId], 201);
 }
 
-/* =====================================================
-   ======================= PUT =========================
-   ===================================================== */
-if ($method === 'PUT') {
+// ====== PUT / DELETE ======
+if ($method === 'PUT' || $method === 'DELETE') {
+    if (!isset($_GET['id'])) jsonResponse(["error" => "Thiếu id"], 400);
+    $id = intval($_GET['id']);
 
-    $sku = trim($input['sku'] ?? '');
-    if ($sku === '') jsonResponse(["error" => "Thiếu SKU"], 400);
+    if ($method === 'PUT') {
+        $sku = trim($input['sku'] ?? '');
+        $name = trim($input['name'] ?? '');
+        $desc = trim($input['description'] ?? '');
+        $qty = intval($input['quantity'] ?? 0);
+        $price = floatval($input['unit_price'] ?? 0.0);
+        $category_id = intval($input['category_id'] ?? 0);
 
-    $params = [
-        $sku,
-        $input['name'],
-        $input['description'] ?? '',
-        (int)$input['quantity'],
-        (float)$input['unit_price'],
-        (int)$input['category_id']
-    ];
+        $query = "UPDATE products 
+                  SET sku=$1, name=$2, description=$3, quantity=$4, unit_price=$5, 
+                      category_id=$6, updated_at=NOW() 
+                  WHERE id=$7";
+        $params = [$sku, $name, $desc, $qty, $price, $category_id, $id];
+    } else { // DELETE
+        $query = "DELETE FROM products WHERE id=$1";
+        $params = [$id];
+    }
 
-    $q = "
-        UPDATE products SET
-            name = $2,
-            description = $3,
-            quantity = $4,
-            unit_price = $5,
-            category_id = $6,
-            updated_at = NOW()
-        WHERE sku = $1
-    ";
+    debugLog("$method Query DB1: $query with params: " . json_encode($params));
+    $res = pg_query_params($pg1, $query, $params);
+    if (!$res) {
+        debugLog("DB1 Error: " . pg_last_error($pg1));
+        jsonResponse(["error" => pg_last_error($pg1)], 500);
+    }
 
-    pg_query_params($pg1, $q, $params);
-    pg_query_params($pg2, $q, $params);
+    if ($SYNC_TO_DB2 && $pg2) {
+        $res2 = @pg_query_params($pg2, $query, $params);
+        if (!$res2) debugLog("⚠️ Đồng bộ DB2 thất bại: " . pg_last_error($pg2));
+    }
 
-    jsonResponse(["success" => true]);
-}
-
-/* =====================================================
-   ===================== DELETE ========================
-   ===================================================== */
-if ($method === 'DELETE') {
-
-    $sku = $_GET['sku'] ?? '';
-    if ($sku === '') jsonResponse(["error" => "Thiếu SKU"], 400);
-
-    pg_query_params($pg1, "DELETE FROM products WHERE sku = $1", [$sku]);
-    pg_query_params($pg2, "DELETE FROM products WHERE sku = $1", [$sku]);
-
-    jsonResponse(["success" => true]);
+    jsonResponse(["success" => true], 200);
 }
 
 jsonResponse(["error" => "Method không được hỗ trợ"], 405);
-ob_end_flush();
+?>
