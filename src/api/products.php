@@ -1,10 +1,16 @@
 <?php
-// src/api/products.php
+/* =====================================================
+   FIX JSON ERROR + SYNC 2 DB NEON
+   ===================================================== */
 
+/* ===== CHỐNG PHP WARNING PHÁ JSON ===== */
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+error_reporting(E_ALL);
+ob_start();
+
+/* ===== HEADER ===== */
 header('Content-Type: application/json; charset=utf-8');
-require_once __DIR__ . '/../config.php';
-
-/* ===== CORS ===== */
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
@@ -13,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
+require_once __DIR__ . '/../config.php';
 
 /* ===== HELPER ===== */
 function jsonResponse($data, $code = 200) {
@@ -27,12 +35,16 @@ function debugLog($msg) {
 
 /* ===== DB CONNECTION ===== */
 $pg1 = getDBConnection(1); // DB chính
-$pg2 = getDBConnection(2); // DB sync (Neon)
+$pg2 = getDBConnection(2); // DB sync
 
 $SYNC_TO_DB2 = true;
 
 if (!$pg1) {
-    jsonResponse(["error" => "❌ Không thể kết nối DB chính"], 500);
+    jsonResponse(["error" => "Không thể kết nối DB chính"], 500);
+}
+
+if ($SYNC_TO_DB2 && !$pg2) {
+    debugLog("⚠️ DB2 connection FAILED");
 }
 
 /* ===== INPUT ===== */
@@ -41,9 +53,9 @@ $rawInput = file_get_contents('php://input');
 $input    = json_decode($rawInput, true);
 if (!is_array($input)) $input = [];
 
-/* ======================================================
-   ======================= GET ==========================
-   ====================================================== */
+/* =====================================================
+   ======================= GET =========================
+   ===================================================== */
 if ($method === 'GET') {
 
     $sku    = trim($_GET['sku'] ?? '');
@@ -61,7 +73,7 @@ if ($method === 'GET') {
         );
 
         if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
-        jsonResponse(pg_fetch_assoc($res) ?: [], 200);
+        jsonResponse(pg_fetch_assoc($res) ?: []);
     }
 
     $res = pg_query_params(
@@ -75,12 +87,12 @@ if ($method === 'GET') {
     );
 
     if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
-    jsonResponse(pg_fetch_all($res) ?: [], 200);
+    jsonResponse(pg_fetch_all($res) ?: []);
 }
 
-/* ======================================================
-   ======================= POST =========================
-   ====================================================== */
+/* =====================================================
+   ======================= POST ========================
+   ===================================================== */
 if ($method === 'POST') {
 
     debugLog("POST RAW: " . $rawInput);
@@ -112,7 +124,7 @@ if ($method === 'POST') {
 
     $insertedId = pg_fetch_assoc($res)['id'];
 
-    /* ===== SYNC DB2 (UPSERT BY SKU) ===== */
+    /* ===== SYNC DB2 (UPSERT THEO SKU) ===== */
     if ($SYNC_TO_DB2 && $pg2) {
         $querySync = "
             INSERT INTO products (sku, name, description, quantity, unit_price, category_id)
@@ -127,20 +139,20 @@ if ($method === 'POST') {
         ";
 
         if (!pg_query_params($pg2, $querySync, $params)) {
-            debugLog("⚠️ DB2 sync failed: " . pg_last_error($pg2));
+            debugLog("⚠️ DB2 SYNC ERROR: " . pg_last_error($pg2));
         }
     }
 
     jsonResponse([
         "success" => true,
-        "id"      => $insertedId,
-        "sku"     => $sku
+        "id"  => $insertedId,
+        "sku" => $sku
     ], 201);
 }
 
-/* ======================================================
-   ======================= PUT ==========================
-   ====================================================== */
+/* =====================================================
+   ======================= PUT =========================
+   ===================================================== */
 if ($method === 'PUT') {
 
     $sku         = trim($input['sku'] ?? '');
@@ -171,16 +183,16 @@ if ($method === 'PUT') {
 
     if ($SYNC_TO_DB2 && $pg2) {
         if (!pg_query_params($pg2, $query, $params)) {
-            debugLog("⚠️ DB2 PUT sync failed: " . pg_last_error($pg2));
+            debugLog("⚠️ DB2 PUT ERROR: " . pg_last_error($pg2));
         }
     }
 
     jsonResponse(["success" => true]);
 }
 
-/* ======================================================
-   ===================== DELETE =========================
-   ====================================================== */
+/* =====================================================
+   ===================== DELETE ========================
+   ===================================================== */
 if ($method === 'DELETE') {
 
     $sku = trim($_GET['sku'] ?? '');
@@ -195,7 +207,7 @@ if ($method === 'DELETE') {
 
     if ($SYNC_TO_DB2 && $pg2) {
         if (!pg_query_params($pg2, $query, $params)) {
-            debugLog("⚠️ DB2 DELETE sync failed: " . pg_last_error($pg2));
+            debugLog("⚠️ DB2 DELETE ERROR: " . pg_last_error($pg2));
         }
     }
 
@@ -204,3 +216,5 @@ if ($method === 'DELETE') {
 
 /* ===== METHOD NOT ALLOWED ===== */
 jsonResponse(["error" => "Method không được hỗ trợ"], 405);
+
+ob_end_flush();
