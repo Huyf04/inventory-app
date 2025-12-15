@@ -52,7 +52,7 @@
 
 <div class="grid grid-cols-2 gap-3">
   <input id="quantity" type="number" class="border p-2 rounded" placeholder="Số lượng">
-  <input id="unit_price" class="border p-2 rounded" placeholder="Đơn giá">
+  <input id="unit_price" type="number" class="border p-2 rounded" placeholder="Đơn giá">
 </div>
 
 <select id="category_id" class="border p-2 rounded w-full"></select>
@@ -67,18 +67,31 @@
 </div>
 
 <script>
+/* ================= API ================= */
 const apiProducts = './api/products.php';
 const apiCategories = './api/categories.php';
 
+/* ================= DOM ================= */
+const elSku = document.getElementById('sku');
+const elSkuOld = document.getElementById('sku_old');
+const elName = document.getElementById('name');
+const elQty = document.getElementById('quantity');
+const elPrice = document.getElementById('unit_price');
+const elDesc = document.getElementById('description');
+const elCat = document.getElementById('category_id');
+const tbody = document.getElementById('tbody');
+const formTitle = document.getElementById('formTitle');
+const productForm = document.getElementById('productForm');
+const q = document.getElementById('q');
+
 /* ================= LIST ================= */
-async function fetchList(q='') {
+async function fetchList(keyword='') {
   let url = apiProducts;
-  if (q) url += '?q=' + encodeURIComponent(q);
+  if (keyword) url += '?q=' + encodeURIComponent(keyword);
 
   const res = await fetch(url);
   const data = await res.json();
 
-  const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
 
   data.forEach(p => {
@@ -92,7 +105,7 @@ async function fetchList(q='') {
         <td class="p-2 text-right">${Number(p.unit_price).toLocaleString()} ₫</td>
         <td class="p-2">
           <button onclick="edit('${p.sku}')" class="text-blue-600 mr-2">Sửa</button>
-          <button onclick="del('${p.sku}')" class="text-red-600">Xóa</button>
+          <button onclick="delProduct('${p.sku}')" class="text-red-600">Xóa</button>
         </td>
       </tr>
     `;
@@ -101,27 +114,26 @@ async function fetchList(q='') {
 
 /* ================= EDIT ================= */
 async function edit(sku) {
-  const res = await fetch(apiProducts + '?sku=' + sku);
+  const res = await fetch(apiProducts + '?sku=' + encodeURIComponent(sku));
   const p = await res.json();
 
-  sku_old.value = p.sku;
-  sku.value = p.sku;
-  sku.disabled = true;
+  elSkuOld.value = p.sku;
+  elSku.value = p.sku;
+  elSku.disabled = true;
 
-  name.value = p.name;
-  quantity.value = p.quantity;
-  unit_price.value = p.unit_price;
-  description.value = p.description;
-  category_id.value = p.category_id;
+  elName.value = p.name;
+  elQty.value = p.quantity ?? 0;
+  elPrice.value = p.unit_price ?? 0;
+  elDesc.value = p.description ?? '';
+  elCat.value = p.category_id ?? '';
 
   formTitle.innerText = 'Sửa sản phẩm';
 }
 
 /* ================= DELETE ================= */
-async function del(sku) {
+async function delProduct(sku) {
   if (!confirm('Xóa sản phẩm này?')) return;
-
-  await fetch(apiProducts + '?sku=' + sku, { method: 'DELETE' });
+  await fetch(apiProducts + '?sku=' + encodeURIComponent(sku), { method: 'DELETE' });
   fetchList();
 }
 
@@ -130,16 +142,16 @@ productForm.addEventListener('submit', async e => {
   e.preventDefault();
 
   const payload = {
-    sku: sku.value,
-    name: name.value,
-    quantity: Number(quantity.value),
-    unit_price: Number(unit_price.value),
-    description: description.value,
-    category_id: category_id.value
+    sku: elSku.value,
+    name: elName.value,
+    quantity: Number(elQty.value),
+    unit_price: Number(elPrice.value),
+    description: elDesc.value,
+    category_id: elCat.value
   };
 
-  const method = sku_old.value ? 'PUT' : 'POST';
-  const url = sku_old.value ? apiProducts + '?sku=' + sku_old.value : apiProducts;
+  const method = elSkuOld.value ? 'PUT' : 'POST';
+  const url = elSkuOld.value ? apiProducts : apiProducts;
 
   await fetch(url, {
     method,
@@ -154,8 +166,8 @@ productForm.addEventListener('submit', async e => {
 /* ================= HELPERS ================= */
 function resetForm() {
   productForm.reset();
-  sku.disabled = false;
-  sku_old.value = '';
+  elSku.disabled = false;
+  elSkuOld.value = '';
   formTitle.innerText = 'Thêm sản phẩm';
 }
 
@@ -168,12 +180,13 @@ function resetSearch() {
 async function fetchCategories() {
   const res = await fetch(apiCategories);
   const cats = await res.json();
-  category_id.innerHTML = '<option value="">Chọn danh mục</option>';
+  elCat.innerHTML = '<option value="">Chọn danh mục</option>';
   cats.forEach(c => {
-    category_id.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    elCat.innerHTML += `<option value="${c.id}">${c.name}</option>`;
   });
 }
 
+/* ================= INIT ================= */
 fetchCategories();
 fetchList();
 </script>
