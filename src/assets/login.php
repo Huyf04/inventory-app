@@ -2,7 +2,7 @@
 // src/assets/login.php
 
 require_once 'auth.php';
-session_start();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
