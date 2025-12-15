@@ -107,8 +107,8 @@ if ($method === 'PUT') {
 
     if ($name === '') jsonResponse(["error" => "Tên danh mục không được để trống"], 400);
 
-    // Nếu bảng categories không có cột updated_at, xóa ", updated_at = NOW()"
-    $query = "UPDATE categories SET name = $1, description = $2, updated_at = NOW() WHERE id = $3";
+    // Đã xóa ", updated_at = NOW()" vì cột không tồn tại
+    $query = "UPDATE categories SET name = $1, description = $2 WHERE id = $3";
     $params = [$name, $description, $id];
 
     debugLog("PUT Query DB1: $query with params: " . json_encode($params));
