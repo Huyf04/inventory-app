@@ -2,15 +2,21 @@
 // src/assets/login.php
 
 require_once 'auth.php';
+session_start();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
+    // Log để debug (sẽ xuất hiện trong logs Render)
+    error_log("Login attempt: Username='$username', Password length=" . strlen($password));
+    
     if (login($username, $password)) {
-        header('Location: ../index.php');
+        error_log("Login success: Redirecting to ../index.php");
+        header('Location: ../index.php');  // Đường dẫn từ assets/ lên src/
         exit;
     } else {
         $error = 'Sai username hoặc password!';
+        error_log("Login failed for '$username'");
     }
 }
 ?>
