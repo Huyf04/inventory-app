@@ -1,7 +1,7 @@
 <?php
 // src/assets/index.php
 
-require_once 'auth.php';  // Require file auth helper
+require_once 'assets/auth.php';  // Require file auth helper
 
 // Kiểm tra đăng nhập
 if (!isLoggedIn()) {
