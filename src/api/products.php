@@ -1,6 +1,6 @@
 <?php
 /* =====================================================
-   FIX JSON ERROR + SYNC 2 DB NEON
+   PRODUCTS API - SKU BASED + SYNC 2 DB
    ===================================================== */
 
 /* ===== CHỐNG PHP WARNING PHÁ JSON ===== */
@@ -34,8 +34,8 @@ function debugLog($msg) {
 }
 
 /* ===== DB CONNECTION ===== */
-$pg1 = getDBConnection(1); // DB chính
-$pg2 = getDBConnection(2); // DB sync
+$pg1 = getDBConnection(1); // DB chính (Render)
+$pg2 = getDBConnection(2); // DB sync (Neon)
 
 $SYNC_TO_DB2 = true;
 
@@ -58,23 +58,44 @@ if (!is_array($input)) $input = [];
    ===================================================== */
 if ($method === 'GET') {
 
-    $sku    = trim($_GET['sku'] ?? '');
-    $limit  = intval($_GET['limit'] ?? 50);
-    $offset = intval($_GET['offset'] ?? 0);
+    /* ===== GET BY ID (FIX EDIT FORM) ===== */
+    if (isset($_GET['id'])) {
+        $id = intval($_GET['id']);
 
+        $res = pg_query_params(
+            $pg1,
+            "SELECT p.*, c.name AS category_name
+             FROM products p
+             LEFT JOIN categories c ON p.category_id = c.id
+             WHERE p.id = $1
+             LIMIT 1",
+            [$id]
+        );
+
+        if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
+        jsonResponse(pg_fetch_assoc($res) ?: []);
+    }
+
+    /* ===== GET BY SKU ===== */
+    $sku = trim($_GET['sku'] ?? '');
     if ($sku !== '') {
         $res = pg_query_params(
             $pg1,
             "SELECT p.*, c.name AS category_name
              FROM products p
              LEFT JOIN categories c ON p.category_id = c.id
-             WHERE p.sku = $1",
+             WHERE p.sku = $1
+             LIMIT 1",
             [$sku]
         );
 
         if (!$res) jsonResponse(["error" => pg_last_error($pg1)], 500);
         jsonResponse(pg_fetch_assoc($res) ?: []);
     }
+
+    /* ===== GET LIST ===== */
+    $limit  = intval($_GET['limit'] ?? 50);
+    $offset = intval($_GET['offset'] ?? 0);
 
     $res = pg_query_params(
         $pg1,
