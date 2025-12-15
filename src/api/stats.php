@@ -2,11 +2,12 @@
 // src/api/stats.php
 
 header('Content-Type: application/json; charset=utf-8');
-// Tắt hiển thị lỗi ra màn hình để không phá JSON
+// Tắt hiển thị lỗi ra màn hình để không phá JSON (bật tạm để debug nếu cần)
+// ini_set('display_errors', 1);  // Bật tạm thời để xem lỗi, sau đó comment lại
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-require_once __DIR__ . '/../config.php';  // Đường dẫn tới config.php — điều chỉnh nếu cần
+require_once __DIR__ . '/../config.php';  // Đường dẫn tới config.php
 
 // Hàm helper để trả về lỗi JSON
 function returnError($message, $code = 500) {
@@ -15,9 +16,14 @@ function returnError($message, $code = 500) {
     exit;
 }
 
+// Chọn DB: Mặc định DB1 (Render), hoặc từ tham số ?db=2 (Neon)
+$dbChoice = isset($_GET['db']) ? intval($_GET['db']) : 1;
+if ($dbChoice !== 1 && $dbChoice !== 2) $dbChoice = 1;  // Bảo vệ
+$pg = getDBConnection($dbChoice);
+
 // Kiểm tra kết nối DB
 if (!$pg || pg_connection_status($pg) !== PGSQL_CONNECTION_OK) {
-    returnError('Không thể kết nối đến cơ sở dữ liệu.', 500);
+    returnError('Không thể kết nối đến cơ sở dữ liệu (DB' . $dbChoice . ').', 500);
 }
 
 // Lấy tham số từ query string (mặc định low_stock = 10)
@@ -56,6 +62,7 @@ echo json_encode([
     'lowStockCount' => $lowStockCount,
     'totalCategories' => $totalCategories,
     'totalValue' => $totalValue,  // Thêm mới
-    'lowStockThreshold' => $lowStockThreshold  // Để frontend biết
+    'lowStockThreshold' => $lowStockThreshold,
+    'dbUsed' => 'DB' . $dbChoice  // Để biết DB nào được dùng
 ], JSON_UNESCAPED_UNICODE);
 exit;
