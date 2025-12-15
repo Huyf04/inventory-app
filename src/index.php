@@ -5,7 +5,7 @@ require_once 'assets/auth.php';  // Require file auth helper
 
 // Kiểm tra đăng nhập
 if (!isLoggedIn()) {
-    header('Location: login.php');
+    header('Location: assets/login.php');
     exit;
 }
 
