@@ -1,3 +1,24 @@
+<?php
+// src/assets/index.php
+
+require_once 'auth.php';  // Require file auth helper
+
+// Kiểm tra đăng nhập
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+
+$user = getCurrentUser();
+$role = $user['role'];
+
+// Hàm kiểm tra quyền cho frontend (truyền vào JS)
+$canEdit = hasRole('admin') || hasRole('warehouse_staff');
+$canDelete = hasRole('admin') || hasRole('warehouse_staff');
+$canManageCategories = hasRole('admin');
+$canViewStats = hasRole('admin') || hasRole('accountant');
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,21 +38,39 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
   <div class="max-w-7xl mx-auto">
-    <!-- Header -->
+    <!-- Header với Auth -->
     <div class="mb-8">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <i class="fas fa-boxes text-3xl text-blue-600"></i>
           <h1 class="text-3xl font-bold text-gray-900">Quản lý vật tư</h1>
-          <a href="categories.php" class="text-blue-600 hover:text-blue-900 font-medium">Quản lý Danh mục</a>
-          <a href="stats.php" class="text-blue-600 hover:text-blue-900 font-medium">Thống kê</a>
+          <?php if ($canManageCategories): ?>
+            <a href="categories.php" class="text-blue-600 hover:text-blue-900 font-medium">Quản lý Danh mục</a>
+          <?php endif; ?>
+          <?php if ($canViewStats): ?>
+            <a href="stats.php" class="text-blue-600 hover:text-blue-900 font-medium">Thống kê</a>
+          <?php endif; ?>
         </div>
-        <div class="hidden md:block text-sm text-gray-500">
-          Quản lý sản phẩm dễ dàng và hiệu quả
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-500">
+            Xin chào, <strong><?php echo htmlspecialchars($user['username']); ?></strong> (<?php echo ucfirst($role); ?>)
+          </div>
+          <a href="?logout=1" class="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">Đăng xuất</a>
         </div>
+      </div>
+      <!-- Menu dựa trên role -->
+      <div class="mt-4 flex gap-4">
+        <?php if (hasRole('admin') || hasRole('warehouse_staff')): ?>
+          <a href="inventory.php" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Nhập/Xuất Kho</a>
+          <a href="view_stock.php" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Xem Tồn Kho</a>
+        <?php endif; ?>
+        <?php if (hasRole('admin')): ?>
+          <a href="manage_users.php" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">Quản Lý Người Dùng</a>
+        <?php endif; ?>
       </div>
     </div>
 
+    <!-- Phần còn lại giữ nguyên, chỉ thêm kiểm tra quyền trong JS -->
     <!-- Search Section -->
     <div class="mb-6 bg-white shadow-sm rounded-lg p-4 border border-gray-200">
       <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
@@ -92,7 +131,8 @@
       </div>
     </div>
 
-    <!-- Product Form -->
+    <!-- Product Form (chỉ hiện nếu có quyền edit) -->
+    <?php if ($canEdit): ?>
     <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2" id="formTitle">
@@ -154,11 +194,21 @@
         </div>
       </form>
     </div>
+    <?php else: ?>
+      <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+        Bạn không có quyền chỉnh sửa sản phẩm. Liên hệ admin để được cấp quyền.
+      </div>
+    <?php endif; ?>
   </div>
+
   <script>
-    // Sửa đường dẫn API thành tương đối (từ src/index.php đến src/api/)
-    const apiProducts = './api/products.php';
-    const apiCategories = './api/categories.php';
+    // Truyền quyền từ PHP vào JS
+    const canEdit = <?php echo $canEdit ? 'true' : 'false'; ?>;
+    const canDelete = <?php echo $canDelete ? 'true' : 'false'; ?>;
+
+    // Sửa đường dẫn API thành tương đối (từ src/assets/index.php đến src/api/)
+    const apiProducts = '../api/products.php';  // Lên 1 cấp từ assets/ đến api/
+    const apiCategories = '../api/categories.php';
 
     function formatCurrency(input) {
       let value = input.value.replace(/[^\d]/g, '');
@@ -172,15 +222,15 @@
 
     async function fetchCategories() {
       try {
-        console.log('Fetching categories from:', apiCategories);  // Debug log
+        console.log('Fetching categories from:', apiCategories);
         const res = await fetch(apiCategories);
-        console.log('Categories response status:', res.status);  // Debug log
+        console.log('Categories response status:', res.status);
         if (!res.ok) {
           console.error('Failed to fetch categories:', res.statusText);
           return;
         }
         const categories = await res.json();
-        console.log('Categories data:', categories);  // Debug log
+        console.log('Categories data:', categories);
         const select = document.getElementById('category_id');
         select.innerHTML = '<option value="">Chọn danh mục</option>';
         if (Array.isArray(categories)) {
@@ -198,99 +248,108 @@
       }
     }
 
-              async function fetchList(q = '') {
-       let url = apiProducts;
-       if (q) url += '?q=' + encodeURIComponent(q);
-       console.log('Fetching from:', url);
-       try {
-         const res = await fetch(url);
-         console.log('Response status:', res.status, 'Status text:', res.statusText);
-         const responseText = await res.text();  // Lấy response dưới dạng text
-         console.log('Response body (full text):', responseText);  // Log toàn bộ nội dung response
-         if (!res.ok) {
-           showMessage('Lỗi server: ' + res.status + ' - ' + responseText.substring(0, 200), 'error');
-           return;
-         }
-         // Chỉ parse JSON nếu status OK
-         const data = JSON.parse(responseText);
-         console.log('Parsed data:', data);
-         const tbody = document.getElementById('tbody');
-         const emptyState = document.getElementById('emptyState');
-         tbody.innerHTML = '';
-         if (Array.isArray(data) && data.length > 0) {
-           emptyState.classList.add('hidden');
-           data.forEach(p => {
-             const tr = document.createElement('tr');
-             tr.className = 'hover:bg-gray-50 transition-colors';
-             const priceNum = Number(p.unit_price || 0);
-             const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
-             const categoryName = p.category_name || 'Không có';
-             tr.innerHTML = `
-               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-               <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-               <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                 <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-                   <i class="fas fa-edit"></i> Sửa
-                 </button>
-                 <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
-                   <i class="fas fa-trash"></i> Xóa
-                 </button>
-               </td>
-             `;
-             tbody.appendChild(tr);
-           });
-         } else {
-           emptyState.classList.remove('hidden');
-           if (!Array.isArray(data)) {
-             console.error('Data is not an array:', data);
-             showMessage('Lỗi dữ liệu: ' + (data.error || 'Dữ liệu không hợp lệ'), 'error');
-           }
-         }
-       } catch (error) {
-         console.error('Error fetching products:', error);
-         showMessage('Lỗi mạng khi tải danh sách sản phẩm: ' + error.message, 'error');
-       }
-     }
-     
-     
-
-    function showMessage(msg, type = 'success') {
-      const box = document.getElementById('messageBox');
-      box.textContent = msg;
-      box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
-      box.classList.add('scale-100');
-      if (type === 'success') box.classList.add('bg-green-500');
-      else box.classList.add('bg-red-500');
-      setTimeout(() => {
-        box.classList.remove('scale-100');
-        box.classList.add('scale-95');
-        setTimeout(() => box.classList.add('hidden'), 300);
-      }, 3000);
+    async function fetchList(q = '') {
+      let url = apiProducts;
+      if (q) url += '?q=' + encodeURIComponent(q);
+      console.log('Fetching from:', url);
+      try {
+        const res = await fetch(url);
+        console.log('Response status:', res.status, 'Status text:', res.statusText);
+        const responseText = await res.text();
+        console.log('Response body (full text):', responseText);
+        if (!res.ok) {
+          showMessage('Lỗi server: ' + res.status + ' - ' + responseText.substring(0, 200), 'error');
+          return;
+        }
+        const data = JSON.parse(responseText);
+        console.log('Parsed data:', data);
+        const tbody = document.getElementById('tbody');
+        const emptyState = document.getElementById('emptyState');
+        tbody.innerHTML = '';
+        if (Array.isArray(data) && data.length > 0) {
+          emptyState.classList.add('hidden');
+          data.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-gray-50 transition-colors';
+            const priceNum = Number(p.unit_price || 0);
+            const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
+            const categoryName = p.category_name || 'Không có';
+            let actions = '';
+            if (canEdit) {
+              actions += `<button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors"><i class="fas fa-edit"></i> Sửa</button>`;
+            }
+            if (canDelete) {
+              actions += `<button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors"><i class="fas fa-trash"></i> Xóa</button>`;
+            }
+            if (!actions) {
+              actions = '<span class="text-gray-500">Không có quyền</span>';
+            }
+            tr.innerHTML = `
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
+              <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
+              <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${actions}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          emptyState.classList.remove('hidden');
+          if (!Array.isArray(data)) {
+            console.error('Data is not an array:', data);
+            showMessage('Lỗi dữ liệu: ' + (data.error || 'Dữ liệu không hợp lệ'), 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        showMessage('Lỗi mạng khi tải danh sách sản phẩm: ' + error.message, 'error');
+      }
     }
 
-    async function del(id) {
-      if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
-      try {
-        const res = await fetch(apiProducts + '?id=' + id, {
-          method: 'DELETE'
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-  showMessage('Xóa sản phẩm thành công', 'success');
-} else {
-  showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
+   function showMessage(msg, type = 'success') {
+  const box = document.getElementById('messageBox');
+  box.textContent = msg;
+  box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
+  box.classList.add('scale-100');
+  if (type === 'success') box.classList.add('bg-green-500');
+  else box.classList.add('bg-red-500');
+  setTimeout(() => {
+    box.classList.remove('scale-100');
+    box.classList.add('scale-95');
+    setTimeout(() => box.classList.add('hidden'), 300);
+  }, 3000);
 }
-fetchList();
-}catch (error) {
-    console.error('Error editing product:', error);
-    showMessage('Lỗi mạng khi tải sản phẩm', 'error');
-  }}
-    
-    async function edit(id) {
+
+async function del(id) {
+  if (!canDelete) {
+    showMessage('Bạn không có quyền xóa sản phẩm', 'error');
+    return;
+  }
+  if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
+  try {
+    const res = await fetch(apiProducts + '?id=' + id, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      showMessage('Xóa sản phẩm thành công', 'success');
+    } else {
+      showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
+    }
+    fetchList();
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    showMessage('Lỗi mạng khi xóa sản phẩm', 'error');
+  }
+}
+
+async function edit(id) {
+  if (!canEdit) {
+    showMessage('Bạn không có quyền sửa sản phẩm', 'error');
+    return;
+  }
   try {
     const res = await fetch(apiProducts + '?id=' + id);
     if (!res.ok) {
@@ -314,6 +373,10 @@ fetchList();
 
 document.getElementById('productForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!canEdit) {
+    showMessage('Bạn không có quyền lưu sản phẩm', 'error');
+    return;
+  }
   const id = document.getElementById('id').value;
   const unitPriceInput = document.getElementById('unit_price');
   const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
@@ -381,3 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
   </script>
 </body>
 </html>
+
+<?php
+// Xử lý logout
+if (isset($_GET['logout'])) {
+    logout();
+}
+?>

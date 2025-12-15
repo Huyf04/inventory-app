@@ -1,5 +1,16 @@
 <?php
 // src/stats.php
+require_once __DIR__ . 'assets/auth.php';
+if (!isLoggedIn()) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Chưa đăng nhập']);
+    exit;
+}
+if (!hasRole('accountant') && !hasRole('admin')) {  // Ví dụ: Chỉ accountant/admin xem stats
+    http_response_code(403);
+    echo json_encode(['error' => 'Không có quyền']);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="vi">
