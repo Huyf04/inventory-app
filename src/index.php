@@ -1,383 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <title>Quản lý vật tư</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    /* Custom styles for better table responsiveness */
-    @media (max-width: 768px) {
-      .table-container {
-        overflow-x: auto;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<title>Quản lý vật tư</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6">
-  <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <i class="fas fa-boxes text-3xl text-blue-600"></i>
-          <h1 class="text-3xl font-bold text-gray-900">Quản lý vật tư</h1>
-          <a href="categories.php" class="text-blue-600 hover:text-blue-900 font-medium">Quản lý Danh mục</a>
-          <a href="stats.php" class="text-blue-600 hover:text-blue-900 font-medium">Thống kê</a>
-        </div>
-        <div class="hidden md:block text-sm text-gray-500">
-          Quản lý sản phẩm dễ dàng và hiệu quả
-        </div>
-      </div>
-    </div>
 
-    <!-- Search Section -->
-    <div class="mb-6 bg-white shadow-sm rounded-lg p-4 border border-gray-200">
-      <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
-        <div class="flex-1 relative">
-          <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-          <input
-            id="q"
-            class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            placeholder="Tìm theo tên, SKU..."
-          />
-        </div>
-        <div class="flex gap-2 flex-wrap">
-          <button id="btnSearch" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
-            <i class="fas fa-search"></i>
-            Tìm
-          </button>
-          <button id="btnRefresh" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2">
-            <i class="fas fa-refresh"></i>
-            Làm mới
-          </button>
-        </div>
-      </div>
-    </div>
+<body class="min-h-screen bg-gray-100 p-4">
+<div class="max-w-7xl mx-auto">
 
-    <!-- Message Box -->
-    <div id="messageBox" class="my-4 hidden p-4 rounded-lg text-white shadow-lg transform transition-all duration-300"></div>
+<h1 class="text-2xl font-bold mb-6">Quản lý vật tư</h1>
 
-    <!-- Products Table -->
-    <div class="mb-8 bg-white shadow-lg rounded-lg overflow-hidden border border-gray-200">
-      <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-        <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <i class="fas fa-list"></i>
-          Danh sách sản phẩm
-        </h2>
-      </div>
-      <div class="table-container">
-        <table class="w-full table-auto" id="productTable">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên sản phẩm</th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Danh mục</th>
-              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
-              <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn giá</th>
-              <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="tbody" class="bg-white divide-y divide-gray-200">
-            <!-- Rows sẽ được JS chèn vào -->
-          </tbody>
-        </table>
-      </div>
-      <!-- Empty state -->
-      <div id="emptyState" class="hidden text-center py-12">
-        <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
-        <p class="text-gray-500 text-lg">Chưa có sản phẩm nào. Hãy thêm sản phẩm đầu tiên!</p>
-      </div>
-    </div>
+<!-- SEARCH -->
+<div class="mb-4 flex gap-2">
+  <input id="q" class="border p-2 flex-1 rounded" placeholder="Tìm theo SKU hoặc tên">
+  <button onclick="fetchList(q.value)" class="bg-blue-600 text-white px-4 rounded">Tìm</button>
+  <button onclick="resetSearch()" class="bg-gray-300 px-4 rounded">Làm mới</button>
+</div>
 
-    <!-- Product Form -->
-    <div class="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-semibold text-gray-900 flex items-center gap-2" id="formTitle">
-          <i class="fas fa-plus-circle text-green-600"></i>
-          Thêm sản phẩm mới
-        </h2>
-        <button id="btnToggleForm" class="md:hidden bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg transition-colors">
-          <i class="fas fa-chevron-up"></i>
-        </button>
-      </div>
-      <form id="productForm" class="space-y-6">
-        <input type="hidden" id="id" />
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label for="sku" class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
-            <input id="sku" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
-          </div>
-          <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Tên sản phẩm</label>
-            <input id="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-2">Số lượng</label>
-            <input id="quantity" type="number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" min="0" />
-          </div>
-          <div>
-            <label for="unit_price" class="block text-sm font-medium text-gray-700 mb-2">Đơn giá (VND)</label>
-            <input
-              id="unit_price"
-              type="text"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="Nhập đơn giá..."
-              oninput="formatCurrency(this)"
-            />
-          </div>
-        </div>
-        <div>
-          <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-          <select id="category_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-            <option value="">Chọn danh mục</option>
-            <!-- Các option sẽ được JS chèn vào -->
-          </select>
-        </div>
-        <div>
-          <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Mô tả</label>
-          <textarea id="description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"></textarea>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-          <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-none">
-            <i class="fas fa-save"></i>
-            Lưu sản phẩm
-          </button>
-          <button type="button" id="btnReset" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-none">
-            <i class="fas fa-times"></i>
-            Hủy
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <script>
-    // Sửa đường dẫn API thành tương đối (từ src/index.php đến src/api/)
-    const apiProducts = './api/products.php';
-    const apiCategories = './api/categories.php';
+<!-- MESSAGE -->
+<div id="msg" class="hidden mb-4 p-3 rounded text-white"></div>
 
-    function formatCurrency(input) {
-      let value = input.value.replace(/[^\d]/g, '');
-      if (!value) {
-        input.value = '';
-        return;
-      }
-      value = new Intl.NumberFormat('vi-VN').format(value);
-      input.value = value + ' ₫';
-    }
+<!-- TABLE -->
+<table class="w-full bg-white border rounded mb-6">
+<thead class="bg-gray-200">
+<tr>
+  <th class="p-2">ID</th>
+  <th class="p-2">SKU</th>
+  <th class="p-2">Tên</th>
+  <th class="p-2">Danh mục</th>
+  <th class="p-2 text-right">SL</th>
+  <th class="p-2 text-right">Giá</th>
+  <th class="p-2">Hành động</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
 
-    async function fetchCategories() {
-      try {
-        console.log('Fetching categories from:', apiCategories);  // Debug log
-        const res = await fetch(apiCategories);
-        console.log('Categories response status:', res.status);  // Debug log
-        if (!res.ok) {
-          console.error('Failed to fetch categories:', res.statusText);
-          return;
-        }
-        const categories = await res.json();
-        console.log('Categories data:', categories);  // Debug log
-        const select = document.getElementById('category_id');
-        select.innerHTML = '<option value="">Chọn danh mục</option>';
-        if (Array.isArray(categories)) {
-          categories.forEach(cat => {
-            const option = document.createElement('option');
-            option.value = cat.id;
-            option.textContent = cat.name;
-            select.appendChild(option);
-          });
-        } else {
-          console.error('Categories data is not an array:', categories);
-        }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-      }
-    }
+<!-- FORM -->
+<form id="productForm" class="bg-white p-4 rounded shadow space-y-3">
+<h2 id="formTitle" class="font-semibold">Thêm sản phẩm</h2>
 
-              async function fetchList(q = '') {
-       let url = apiProducts;
-       if (q) url += '?q=' + encodeURIComponent(q);
-       console.log('Fetching from:', url);
-       try {
-         const res = await fetch(url);
-         console.log('Response status:', res.status, 'Status text:', res.statusText);
-         const responseText = await res.text();  // Lấy response dưới dạng text
-         console.log('Response body (full text):', responseText);  // Log toàn bộ nội dung response
-         if (!res.ok) {
-           showMessage('Lỗi server: ' + res.status + ' - ' + responseText.substring(0, 200), 'error');
-           return;
-         }
-         // Chỉ parse JSON nếu status OK
-         const data = JSON.parse(responseText);
-         console.log('Parsed data:', data);
-         const tbody = document.getElementById('tbody');
-         const emptyState = document.getElementById('emptyState');
-         tbody.innerHTML = '';
-         if (Array.isArray(data) && data.length > 0) {
-           emptyState.classList.add('hidden');
-           data.forEach(p => {
-             const tr = document.createElement('tr');
-             tr.className = 'hover:bg-gray-50 transition-colors';
-             const priceNum = Number(p.unit_price || 0);
-             const priceFormatted = priceNum.toLocaleString('vi-VN') + ' ₫';
-             const categoryName = p.category_name || 'Không có';
-             tr.innerHTML = `
-               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${p.id}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${p.sku || ''}</td>
-               <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${p.name || ''}">${p.name || ''}</td>
-               <td class="px-6 py-4 text-sm text-gray-500">${categoryName}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
-               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                 <button onclick="edit('${p.sku}')" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
-                   <i class="fas fa-edit"></i> Sửa
-                 </button>
-                 <button onclick="del('${p.sku}')" class="text-red-600 hover:text-red-900 transition-colors">
-                   <i class="fas fa-trash"></i> Xóa
-                 </button>
-               </td>
-             `;
-             tbody.appendChild(tr);
-           });
-         } else {
-           emptyState.classList.remove('hidden');
-           if (!Array.isArray(data)) {
-             console.error('Data is not an array:', data);
-             showMessage('Lỗi dữ liệu: ' + (data.error || 'Dữ liệu không hợp lệ'), 'error');
-           }
-         }
-       } catch (error) {
-         console.error('Error fetching products:', error);
-         showMessage('Lỗi mạng khi tải danh sách sản phẩm: ' + error.message, 'error');
-       }
-     }
-     
-     
+<input type="hidden" id="sku_old">
 
-    function showMessage(msg, type = 'success') {
-      const box = document.getElementById('messageBox');
-      box.textContent = msg;
-      box.classList.remove('hidden', 'bg-green-500', 'bg-red-500', 'scale-95');
-      box.classList.add('scale-100');
-      if (type === 'success') box.classList.add('bg-green-500');
-      else box.classList.add('bg-red-500');
-      setTimeout(() => {
-        box.classList.remove('scale-100');
-        box.classList.add('scale-95');
-        setTimeout(() => box.classList.add('hidden'), 300);
-      }, 3000);
-    }
+<div class="grid grid-cols-2 gap-3">
+  <input id="sku" class="border p-2 rounded" placeholder="SKU" required>
+  <input id="name" class="border p-2 rounded" placeholder="Tên sản phẩm" required>
+</div>
 
-    async function del(id) {
-      if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
-      try {
-        fetch(apiProducts + '?sku=' + encodeURIComponent(sku), {
-  method: 'DELETE'
-});
-        const data = await res.json();
-        if (res.ok && data.success) {
-  showMessage('Xóa sản phẩm thành công', 'success');
-} else {
-  showMessage('Lỗi khi xóa: ' + (data.error || ''), 'error');
-}
-fetchList();
-}catch (error) {
-    console.error('Error editing product:', error);
-    showMessage('Lỗi mạng khi tải sản phẩm', 'error');
-  }}
-    
-    async function edit(id) {
-  try {
-    const res = await fetch(apiProducts + '?sku=' + encodeURIComponent(sku));
-    if (!res.ok) {
-      showMessage('Lỗi khi tải sản phẩm để sửa', 'error');
-      return;
-    }
-    const p = await res.json();
-    document.getElementById('id').value = p.id;
-    document.getElementById('sku').value = p.sku || '';
-    document.getElementById('name').value = p.name || '';
-    document.getElementById('quantity').value = p.quantity || '';
-    document.getElementById('unit_price').value = p.unit_price ? Number(p.unit_price).toLocaleString('vi-VN') + ' ₫' : '';
-    document.getElementById('description').value = p.description || '';
-    document.getElementById('category_id').value = p.category_id || '';
-    document.getElementById('formTitle').innerHTML = '<i class="fas fa-edit text-blue-600"></i> Sửa sản phẩm';
-  } catch (error) {
-    console.error('Error editing product:', error);
-    showMessage('Lỗi mạng khi tải sản phẩm', 'error');
-  }
+<div class="grid grid-cols-2 gap-3">
+  <input id="quantity" type="number" class="border p-2 rounded" placeholder="Số lượng">
+  <input id="unit_price" class="border p-2 rounded" placeholder="Đơn giá">
+</div>
+
+<select id="category_id" class="border p-2 rounded w-full"></select>
+<textarea id="description" class="border p-2 rounded w-full" placeholder="Mô tả"></textarea>
+
+<div class="flex gap-2">
+  <button class="bg-green-600 text-white px-4 py-2 rounded">Lưu</button>
+  <button type="button" onclick="resetForm()" class="bg-gray-300 px-4 py-2 rounded">Hủy</button>
+</div>
+</form>
+
+</div>
+
+<script>
+const apiProducts = './api/products.php';
+const apiCategories = './api/categories.php';
+
+/* ================= LIST ================= */
+async function fetchList(q='') {
+  let url = apiProducts;
+  if (q) url += '?q=' + encodeURIComponent(q);
+
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  data.forEach(p => {
+    tbody.innerHTML += `
+      <tr>
+        <td class="p-2">${p.id}</td>
+        <td class="p-2">${p.sku}</td>
+        <td class="p-2">${p.name}</td>
+        <td class="p-2">${p.category_name || ''}</td>
+        <td class="p-2 text-right">${p.quantity}</td>
+        <td class="p-2 text-right">${Number(p.unit_price).toLocaleString()} ₫</td>
+        <td class="p-2">
+          <button onclick="edit('${p.sku}')" class="text-blue-600 mr-2">Sửa</button>
+          <button onclick="del('${p.sku}')" class="text-red-600">Xóa</button>
+        </td>
+      </tr>
+    `;
+  });
 }
 
-document.getElementById('productForm').addEventListener('submit', async (e) => {
+/* ================= EDIT ================= */
+async function edit(sku) {
+  const res = await fetch(apiProducts + '?sku=' + sku);
+  const p = await res.json();
+
+  sku_old.value = p.sku;
+  sku.value = p.sku;
+  sku.disabled = true;
+
+  name.value = p.name;
+  quantity.value = p.quantity;
+  unit_price.value = p.unit_price;
+  description.value = p.description;
+  category_id.value = p.category_id;
+
+  formTitle.innerText = 'Sửa sản phẩm';
+}
+
+/* ================= DELETE ================= */
+async function del(sku) {
+  if (!confirm('Xóa sản phẩm này?')) return;
+
+  await fetch(apiProducts + '?sku=' + sku, { method: 'DELETE' });
+  fetchList();
+}
+
+/* ================= SUBMIT ================= */
+productForm.addEventListener('submit', async e => {
   e.preventDefault();
-  const id = document.getElementById('id').value;
-  const unitPriceInput = document.getElementById('unit_price');
-  const cleanValue = unitPriceInput.value.replace(/[^\d]/g, '');
-  const unit_price = parseFloat(cleanValue || 0);
-  const category_id = document.getElementById('category_id').value;
+
   const payload = {
-    sku: document.getElementById('sku').value,
-    name: document.getElementById('name').value,
-    quantity: parseInt(document.getElementById('quantity').value || 0),
-    unit_price,
-    description: document.getElementById('description').value,
-    category_id
+    sku: sku.value,
+    name: name.value,
+    quantity: Number(quantity.value),
+    unit_price: Number(unit_price.value),
+    description: description.value,
+    category_id: category_id.value
   };
-  try {
-    let res;
-    if (id) {
-      res = await fetch(apiProducts, {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(payload)
-});
-    } else {
-      res = await fetch(apiProducts, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-    }
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showMessage(id ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công', 'success');
-      document.getElementById('productForm').reset();
-      document.getElementById('id').value = '';
-      document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
-      fetchList();  // Refresh danh sách sau khi thêm/sửa
-    } else {
-      showMessage('Lỗi: ' + (data.error || ''), 'error');
-    }
-  } catch (error) {
-    console.error('Error submitting form:', error);
-    showMessage('Lỗi mạng khi lưu sản phẩm', 'error');
-  }
-});
 
-document.getElementById('btnSearch').addEventListener('click', () => {
-  const q = document.getElementById('q').value.trim();
-  fetchList(q);
-});
+  const method = sku_old.value ? 'PUT' : 'POST';
+  const url = sku_old.value ? apiProducts + '?sku=' + sku_old.value : apiProducts;
 
-document.getElementById('btnRefresh').addEventListener('click', () => {
-  document.getElementById('q').value = '';
+  await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  resetForm();
   fetchList();
 });
 
-document.getElementById('btnReset').addEventListener('click', () => {
-  document.getElementById('productForm').reset();
-  document.getElementById('id').value = '';
-  document.getElementById('formTitle').innerHTML = '<i class="fas fa-plus-circle text-green-600"></i> Thêm sản phẩm mới';
-});
+/* ================= HELPERS ================= */
+function resetForm() {
+  productForm.reset();
+  sku.disabled = false;
+  sku_old.value = '';
+  formTitle.innerText = 'Thêm sản phẩm';
+}
 
-document.addEventListener('DOMContentLoaded', () => {
-  fetchCategories();
+function resetSearch() {
+  q.value = '';
   fetchList();
-});
-  </script>
+}
+
+/* ================= CATEGORIES ================= */
+async function fetchCategories() {
+  const res = await fetch(apiCategories);
+  const cats = await res.json();
+  category_id.innerHTML = '<option value="">Chọn danh mục</option>';
+  cats.forEach(c => {
+    category_id.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+  });
+}
+
+fetchCategories();
+fetchList();
+</script>
 </body>
 </html>
