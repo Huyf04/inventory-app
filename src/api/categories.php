@@ -1,5 +1,6 @@
 <?php
 // src/api/categories.php
+
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../config.php';
 
@@ -16,29 +17,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // ====== HÀM HỖ TRỢ ======
 function jsonResponse($data, $code = 200) {
     http_response_code($code);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+// ====== LOG DEBUG ======
+function debugLog($msg) {
+    error_log("[DEBUG] " . $msg);
 }
 
 // ====== KẾT NỐI DB ======
 $pg1 = getDBConnection(1); // Render 🇸🇬
 $pg2 = getDBConnection(2); // Neon 🇯🇵
 
-// Bật đồng bộ như products.php
+// Bật đồng bộ
 $SYNC_TO_DB2 = true;
 
 if (!$pg1) jsonResponse(["error" => "Không thể kết nối DB chính"], 500);
 
-$inputRaw = file_get_contents('php://input');
-$input = json_decode($inputRaw, true);
+$input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) $input = [];
 
 $method = $_SERVER['REQUEST_METHOD'];
-
-// ====== LOG DEBUG ======
-function debugLog($msg) {
-    error_log("[DEBUG] " . $msg);
-}
 
 // ====== GET ======
 if ($method === 'GET') {
@@ -64,8 +64,6 @@ if ($method === 'GET') {
 
 // ====== POST ======
 if ($method === 'POST') {
-    debugLog("Raw POST input: " . $inputRaw);
-
     $name = trim($input['name'] ?? '');
     $description = trim($input['description'] ?? '');
 
@@ -74,7 +72,7 @@ if ($method === 'POST') {
     $query = "INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id";
     $params = [$name, $description];
 
-    debugLog("Query DB1: $query with params: " . json_encode($params));
+    debugLog("POST Query DB1: $query with params: " . json_encode($params));
 
     $res = pg_query_params($pg1, $query, $params);
     if (!$res) {
@@ -84,7 +82,7 @@ if ($method === 'POST') {
     $row = pg_fetch_assoc($res);
     $insertedId = $row['id'];
 
-    // 🔁 Đồng bộ sang DB2 nhưng không block nếu fail (như products.php)
+    // 🔁 Đồng bộ sang DB2 nhưng không block nếu fail
     if ($SYNC_TO_DB2 && $pg2) {
         $res2 = @pg_query_params($pg2, $query, $params);
         if (!$res2) {
@@ -110,6 +108,7 @@ if ($method === 'PUT') {
     $params = [$name, $description, $id];
 
     debugLog("PUT Query DB1: $query with params: " . json_encode($params));
+
     $res = pg_query_params($pg1, $query, $params);
     if (!$res) {
         debugLog("DB1 Error: " . pg_last_error($pg1));
@@ -134,6 +133,7 @@ if ($method === 'DELETE') {
     $params = [$id];
 
     debugLog("DELETE Query DB1: $query with params: " . json_encode($params));
+
     $res = pg_query_params($pg1, $query, $params);
     if (!$res) {
         debugLog("DB1 Error: " . pg_last_error($pg1));
