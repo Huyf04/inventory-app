@@ -233,10 +233,10 @@
                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">${p.quantity || 0}</td>
                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">${priceFormatted}</td>
                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                 <button onclick="edit(${p.id})" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
+                 <button onclick="edit('${p.sku}')" class="mr-3 text-blue-600 hover:text-blue-900 transition-colors">
                    <i class="fas fa-edit"></i> Sửa
                  </button>
-                 <button onclick="del(${p.id})" class="text-red-600 hover:text-red-900 transition-colors">
+                 <button onclick="del('${p.sku}')" class="text-red-600 hover:text-red-900 transition-colors">
                    <i class="fas fa-trash"></i> Xóa
                  </button>
                </td>
@@ -275,9 +275,9 @@
     async function del(id) {
       if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
       try {
-        const res = await fetch(apiProducts + '?id=' + id, {
-          method: 'DELETE'
-        });
+        fetch(apiProducts + '?sku=' + encodeURIComponent(sku), {
+  method: 'DELETE'
+});
         const data = await res.json();
         if (res.ok && data.success) {
   showMessage('Xóa sản phẩm thành công', 'success');
@@ -292,7 +292,7 @@ fetchList();
     
     async function edit(id) {
   try {
-    const res = await fetch(apiProducts + '?id=' + id);
+    const res = await fetch(apiProducts + '?sku=' + encodeURIComponent(sku));
     if (!res.ok) {
       showMessage('Lỗi khi tải sản phẩm để sửa', 'error');
       return;
@@ -330,11 +330,11 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
   try {
     let res;
     if (id) {
-      res = await fetch(apiProducts + '?id=' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      res = await fetch(apiProducts, {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+});
     } else {
       res = await fetch(apiProducts, {
         method: 'POST',
