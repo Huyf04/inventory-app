@@ -1,6 +1,8 @@
 <?php
 // src/stats.php
-require_once __DIR__ . 'assets/auth.php';
+
+require_once 'assets/auth.php';  // Require file auth helper
+
 if (!isLoggedIn()) {
     http_response_code(401);
     echo json_encode(['error' => 'Chưa đăng nhập']);
