@@ -65,7 +65,7 @@ $canViewStats = hasRole('admin') || hasRole('accountant');
           <a href="view_stock.php" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Xem Tồn Kho</a>
         <?php endif; ?>
         <?php if (hasRole('admin')): ?>
-          <a href="manage_users.php" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">Quản Lý Người Dùng</a>
+          <a href="assets/manage_users.php" class="bg-purple-500 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">Quản Lý Người Dùng</a>
         <?php endif; ?>
       </div>
     </div>
