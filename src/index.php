@@ -61,7 +61,7 @@ $canViewStats = hasRole('admin') || hasRole('accountant');
       <!-- Menu dựa trên role -->
       <div class="mt-4 flex gap-4">
         <?php if (hasRole('admin') || hasRole('warehouse_staff')): ?>
-          <a href="inventory.php" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Nhập/Xuất Kho</a>
+          <a href="assets/inventory.php" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Nhập/Xuất Kho</a>
           <a href="view_stock.php" class="bg-green-500 hover:bg-green-700 text-white px-4 py-2 rounded-lg">Xem Tồn Kho</a>
         <?php endif; ?>
         <?php if (hasRole('admin')): ?>
