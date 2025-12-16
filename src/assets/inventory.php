@@ -175,36 +175,41 @@ $user = getCurrentUser();
         }
 
         document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const product_id = document.getElementById('product_id').value;
-    const quantity = parseInt(document.getElementById('quantity').value);
-    const type = document.getElementById('type').value;
-    const note = document.getElementById('note').value;
-    const payload = { product_id, quantity, type, note };
-    console.log('Submitting payload:', payload);  // Debug
-    try {
-        const res = await fetch(apiInventory, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            e.preventDefault();
+            const product_id = document.getElementById('product_id').value;
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const type = document.getElementById('type').value;
+            const note = document.getElementById('note').value;
+            const payload = { product_id, quantity, type, note };
+            try {
+                const res = await fetch(apiInventory, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    showMessage('Thực hiện thành công', 'success');
+                    document.getElementById('inventoryForm').reset();
+                    fetchProducts();  // Refresh tồn kho
+                    fetchHistory();  // Refresh lịch sử
+                } else {
+                    showMessage('Lỗi: ' + (data.error || ''), 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting inventory:', error);
+                showMessage('Lỗi mạng', 'error');
+            }
         });
-        console.log('Response status:', res.status);  // Debug
-        const data = await res.json();
-        console.log('Response data:', data);  // Debug
-        if (res.ok && data.success) {
-            showMessage('Thực hiện thành công', 'success');
+
+        document.getElementById('btnReset').addEventListener('click', () => {
             document.getElementById('inventoryForm').reset();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
             fetchProducts();
             fetchHistory();
-        } else {
-            showMessage('Lỗi: ' + (data.error || 'Unknown'), 'error');
-        }
-    } catch (error) {
-        console.error('Fetch error:', error);  // Debug
-        showMessage('Lỗi mạng: ' + error.message, 'error');
-    }
-});
-
+        });
     </script>
 </body>
 </html>
