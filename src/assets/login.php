@@ -148,8 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Footer -->
         <div class="mt-8 text-center text-sm text-gray-500">
-            <p>&copy; 2023 Quản lý vật tư. Tất cả quyền được bảo lưu.</p>
-            <p class="mt-1">Liên hệ: support@inventory.com</p>
+            
         </div>
     </div>
 
